@@ -26,25 +26,24 @@ add_custom_target(
 
 set(SOURCES
     "main.cpp"
+    "Engine.h" 
+    "Engine.cpp" 
+
     "Util/VulkanUtil.h"
     "Util/VulkanUtil.cpp"
-    # Archived -> Should be destroyed
-    "archived/VulkanBase.h" 
-    "archived/labwork/Week01.cpp"
-    "archived/labwork/Week02.cpp" 
-    "archived/labwork/Week03.cpp" 
-    "archived/labwork/Week04.cpp" 
-    "archived/labwork/Week05.cpp"
-    "archived/labwork/Week06.cpp"
     "Util/Singleton.h" 
     "Util/Structs.h"
+    "Util/GameTime.h"
+    "Util/GameTime.cpp"
     # Logger
     "Util/Logger.cpp"
     "Util/Logger.h"
-    "Engine.h" 
-    "Engine.cpp" 
+
     "Core/SwapChain.cpp"
     "Core/SwapChain.h" 
+    "Core/CommandPool.h" 
+    "Core/CommandPool.cpp" 
+
     # Renderer
     "Graphics/Renderer.cpp" 
     "Graphics/Renderer.h" 
@@ -54,22 +53,26 @@ set(SOURCES
     # Vertex Input
     "Graphics/VertexInput.cpp" 
     "Graphics/VertexInput.h" 
+    # Mesh
+    "Mesh/Mesh.h" 
+    "Mesh/Mesh.cpp" 
+    
     # Material
-    "Graphics/Material/Material.cpp"
-    "Graphics/Material/Material.h"
-    "Graphics/Material/Pipelines/Pipeline.cpp" 
-    "Graphics/Material/Pipelines/Pipeline.h" 
-    "Graphics/Material/Pipelines/DefaultPipeline.cpp" 
-    "Graphics/Material/Pipelines/DefaultPipeline.h" 
-    "Graphics/Material/RenderPasses/RenderPass.h" 
-    "Graphics/Material/RenderPasses/RenderPass.cpp" 
-    "Graphics/Material/RenderPasses/DefaultRenderPass.cpp" 
-    "Graphics/Material/RenderPasses/DefaultRenderPass.h" 
-    "Graphics/Material/CommandBuffers/CommandBuffer.cpp" 
-    "Graphics/Material/CommandBuffers/CommandBuffer.h" 
-    # Pipeline Manager -> TODO: Destroy
-    "Graphics/PipelineManager.cpp" 
-    "Graphics/PipelineManager.h" 
+    "Material/Material.cpp"
+    "Material/Material.h"
+        # Pipeline
+    "Material/Pipelines/Pipeline.cpp" 
+    "Material/Pipelines/Pipeline.h" 
+    "Material/Pipelines/DefaultPipeline.cpp" 
+    "Material/Pipelines/DefaultPipeline.h" 
+        # Render Pass
+    "Material/RenderPasses/RenderPass.h" 
+    "Material/RenderPasses/RenderPass.cpp" 
+    "Material/RenderPasses/DefaultRenderPass.cpp" 
+    "Material/RenderPasses/DefaultRenderPass.h" 
+        # Command Buffer
+    "Material/CommandBuffers/CommandBuffer.cpp" 
+    "Material/CommandBuffers/CommandBuffer.h" 
 )
 
 # Create the executable

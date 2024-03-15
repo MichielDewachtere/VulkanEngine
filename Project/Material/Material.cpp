@@ -4,8 +4,15 @@
 
 #include "CommandBuffers/CommandBuffer.h"
 #include "Core/SwapChain.h"
+#include "Mesh/Mesh.h"
 #include "Pipelines/Pipeline.h"
 #include "RenderPasses/RenderPass.h"
+
+void Material::CleanUp(const GameContext& context)
+{
+	m_pPipeline->CleanUp(context.vulkanContext.device);
+	m_pRenderPass->CleanUp(context.vulkanContext.device);
+}
 
 void Material::RecordCommandBuffer(const SwapChain& swapChain, const VkFramebuffer& frameBuffer)
 {
@@ -14,14 +21,14 @@ void Material::RecordCommandBuffer(const SwapChain& swapChain, const VkFramebuff
 	beginInfo.flags = 0; // Optional
 	beginInfo.pInheritanceInfo = nullptr; // Optional
 
-	if (vkBeginCommandBuffer(m_pBuffer->GetCommandBuffer(), &beginInfo) != VK_SUCCESS)
+	if (vkBeginCommandBuffer(m_pCommandBuffer->GetCommandBuffer(), &beginInfo) != VK_SUCCESS)
 	{
 		throw std::runtime_error("failed to begin recording command buffer!");
 	}
 
 	DrawFrame(swapChain, frameBuffer);
 
-	if (vkEndCommandBuffer(m_pBuffer->GetCommandBuffer()) != VK_SUCCESS)
+	if (vkEndCommandBuffer(m_pCommandBuffer->GetCommandBuffer()) != VK_SUCCESS)
 	{
 		throw std::runtime_error("failed to record command buffer!");
 	}
@@ -36,13 +43,13 @@ void Material::DrawFrame(const SwapChain& swapChain, const VkFramebuffer& frameB
 	renderPassInfo.renderArea.offset = { 0, 0 };
 	renderPassInfo.renderArea.extent = swapChain.GetExtent();
 
-	VkClearValue clearColor = { {{0.0f, 0.0f, 0.0f, 1.0f}} };
+	VkClearValue clearColor = { {{173.f / 255.f, 216.f / 255.f, 230.f / 255.f, 1.0f}} };
 	renderPassInfo.clearValueCount = 1;
 	renderPassInfo.pClearValues = &clearColor;
 
-	vkCmdBeginRenderPass(m_pBuffer->GetCommandBuffer(), &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
+	vkCmdBeginRenderPass(m_pCommandBuffer->GetCommandBuffer(), &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
 
-	vkCmdBindPipeline(m_pBuffer->GetCommandBuffer(), VK_PIPELINE_BIND_POINT_GRAPHICS, m_pPipeline->GetPipeline());
+	vkCmdBindPipeline(m_pCommandBuffer->GetCommandBuffer(), VK_PIPELINE_BIND_POINT_GRAPHICS, m_pPipeline->GetPipeline());
 
 	VkViewport viewport{};
 	viewport.x = 0.0f;
@@ -51,13 +58,19 @@ void Material::DrawFrame(const SwapChain& swapChain, const VkFramebuffer& frameB
 	viewport.height = (float)swapChain.GetExtent().height;
 	viewport.minDepth = 0.0f;
 	viewport.maxDepth = 1.0f;
-	vkCmdSetViewport(m_pBuffer->GetCommandBuffer(), 0, 1, &viewport);
+	vkCmdSetViewport(m_pCommandBuffer->GetCommandBuffer(), 0, 1, &viewport);
 
 	VkRect2D scissor{};
 	scissor.offset = { 0, 0 };
 	scissor.extent = swapChain.GetExtent();
-	vkCmdSetScissor(m_pBuffer->GetCommandBuffer(), 0, 1, &scissor);
+	vkCmdSetScissor(m_pCommandBuffer->GetCommandBuffer(), 0, 1, &scissor);
 
-	vkCmdDraw(m_pBuffer->GetCommandBuffer(), 6, 1, 0, 0);
-	vkCmdEndRenderPass(m_pBuffer->GetCommandBuffer());
+	// DrawScene();
+	for (const auto & m : m_pMeshes)
+	{
+		m->Draw(m_pCommandBuffer->GetCommandBuffer());
+	}
+
+	//vkCmdDraw(m_pCommandBuffer->GetCommandBuffer(), 3, 1, 0, 0);
+	vkCmdEndRenderPass(m_pCommandBuffer->GetCommandBuffer());
 }

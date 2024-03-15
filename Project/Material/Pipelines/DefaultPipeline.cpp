@@ -8,7 +8,20 @@ void DefaultPipeline::CreatePipeline(const VkDevice& device, const RenderPass* p
 {
 	if (m_IsCreated)
 		return;
-	
+
+	ShaderManager::GetInstance().Init("shaders");
+	auto vertShaderStageInfo = ShaderManager::GetInstance().CreateShaderInfo(device, ShaderType::vertex, "shader.vert.spv");
+	auto fragShaderStageInfo = ShaderManager::GetInstance().CreateShaderInfo(device, ShaderType::fragment, "shader.frag.spv");
+
+	std::vector shaderStages = { vertShaderStageInfo, fragShaderStageInfo };
+
+	auto vi = new VertexInput();
+	vi->AddBinding<PosCol2D>(false);
+	vi->AddAttribute(VK_FORMAT_R32G32_SFLOAT, 8);
+	vi->AddAttribute(VK_FORMAT_R32G32B32_SFLOAT, 12);
+	const auto assemblyStateInfo = VertexInput::CreateInputAssemblyStateInfo(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST);
+	const auto vertexInputInfo = vi->GetInfo();
+
 	VkPipelineViewportStateCreateInfo viewportState{};
 	viewportState.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
 	viewportState.viewportCount = 1;
@@ -63,27 +76,11 @@ void DefaultPipeline::CreatePipeline(const VkDevice& device, const RenderPass* p
 	}
 
 	VkGraphicsPipelineCreateInfo pipelineInfo{};
-
 	pipelineInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
-
-	ShaderManager::GetInstance().Init("shaders");
-	auto vertShaderStageInfo = ShaderManager::GetInstance().CreateShaderInfo(device, ShaderType::vertex, "shader.vert.spv");
-	auto fragShaderStageInfo = ShaderManager::GetInstance().CreateShaderInfo(device, ShaderType::fragment, "shader.frag.spv", "main");
-
-	std::vector shaderStages = {
-		vertShaderStageInfo,
-		fragShaderStageInfo
-	};
-
 	pipelineInfo.stageCount = 2;
 	pipelineInfo.pStages = shaderStages.data();
-
-	VertexInput input{};
-	const auto inputInfo = input.GetInfo();
-	const auto assemblyStateInfo = VertexInput::CreateInputAssemblyStateInfo(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST);
-	pipelineInfo.pVertexInputState = &inputInfo;
+	pipelineInfo.pVertexInputState = &vertexInputInfo;
 	pipelineInfo.pInputAssemblyState = &assemblyStateInfo;
-
 	pipelineInfo.pViewportState = &viewportState;
 	pipelineInfo.pRasterizationState = &rasterizer;
 	pipelineInfo.pMultisampleState = &multisampling;
@@ -94,7 +91,8 @@ void DefaultPipeline::CreatePipeline(const VkDevice& device, const RenderPass* p
 	pipelineInfo.subpass = 0;
 	pipelineInfo.basePipelineHandle = VK_NULL_HANDLE;
 
-	if (vkCreateGraphicsPipelines(device, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &m_Pipeline) != VK_SUCCESS)
+	const auto result = vkCreateGraphicsPipelines(device, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &m_Pipeline);
+	if (result != VK_SUCCESS)
 	{
 		throw std::runtime_error("failed to create graphics pipeline!");
 	}

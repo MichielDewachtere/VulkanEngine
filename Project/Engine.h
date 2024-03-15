@@ -1,11 +1,17 @@
 #ifndef ENGINE_H
 #define ENGINE_H
 
+#define VK_USE_PLATFORM_WIN32_KHR
+#define GLFW_INCLUDE_VULKAN
+#include <GLFW/glfw3.h>
+#define GLFW_EXPOSE_NATIVE_WIN32
+#include <GLFW/glfw3native.h>
+
 #include <iostream>
-
-#include "Util/Structs.h"
 #include <vulkan/vulkan_core.h>
-
+#include "Util/Structs.h"
+class Mesh;
+class Material;
 class Renderer;
 class SwapChain;
 
@@ -30,13 +36,10 @@ private:
 
 	VkInstance m_Instance{ nullptr };
 	VkDebugUtilsMessengerEXT m_DebugMessenger{ nullptr };
-	// Something for a renderer class?
-	//VkQueue m_GraphicsQueue;
-	//VkQueue m_PresentQueue;
-	//SwapChain* m_pSwapChain;
-	//std::vector<VkFramebuffer> swapChainFramebuffers;
+	//Renderer* m_pRenderer;
 
-	Renderer* m_pRenderer;
+	Material* m_pMaterial;
+	Mesh* m_pTriangle, *m_pRectangle;
 
 	const std::vector<const char*> m_ValidationLayers =
 	{
@@ -50,8 +53,9 @@ private:
 
 	void InitWindow();
 	void InitVulkan();
-	//void InitImGui();
 	void InitRenderer();
+	//void InitImGui();
+	void InitGame();
 
 	void MainLoop();
 	void CleanUp();
@@ -69,7 +73,6 @@ private:
 	bool CheckDeviceExtensionSupport(VkPhysicalDevice device);
 
 	void CreateLogicalDevice();
-	//void CreateFrameBuffers(VkRenderPass renderPass);
 
 	static VKAPI_ATTR VkBool32 VKAPI_CALL DebugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity, VkDebugUtilsMessageTypeFlagsEXT messageType, const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData, void* pUserData)
 	{

@@ -17,6 +17,8 @@ public:
 	 * \param size the size of the format in bytes
 	 */
 	void AddAttribute(VkFormat format, UINT size);
+	template <typename T>
+	void AddBinding(bool instancing = false);
 	void AddBinding(UINT size, bool instancing = false);
 
 	static VkPipelineInputAssemblyStateCreateInfo CreateInputAssemblyStateInfo(VkPrimitiveTopology topology);
@@ -28,5 +30,11 @@ private:
 	std::vector<VkVertexInputBindingDescription> m_BindingDescriptions{};
 	VkPipelineVertexInputStateCreateInfo m_VertexInputInfo{};
 };
+
+template <typename T>
+void VertexInput::AddBinding(bool instancing)
+{
+	AddBinding(sizeof(T), instancing);
+}
 
 #endif // VERTEXINPUT_H

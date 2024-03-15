@@ -8,7 +8,7 @@
 class CommandBuffer final
 {
 public:
-	explicit CommandBuffer(const GameContext& context);
+	explicit CommandBuffer() = default;
 	~CommandBuffer() = default;
 
 	CommandBuffer(const CommandBuffer&) = delete;
@@ -16,15 +16,10 @@ public:
 	CommandBuffer(CommandBuffer&&) = delete;
 	CommandBuffer& operator=(CommandBuffer&&) = delete;
 
-	void CreateCommandBufferPool(const GameContext& context);
 	void CreateCommandBuffer(const VulkanContext& context);
-
 	VkCommandBuffer GetCommandBuffer() const { return m_CommandBuffer; }
 
-	void CleanUp(VkDevice device);
-
 private:
-	VkCommandPool m_CommandPool{};
 	VkCommandBuffer m_CommandBuffer{};
 };
 

@@ -2,20 +2,23 @@
 
 #include <set>
 
+#include "Core/CommandPool.h"
 #include "Core/SwapChain.h"
-#include "Graphics/PipelineManager.h"
+#include "Mesh/Mesh.h"
 #include "Graphics/ShaderManager.h"
 
 #include "Graphics/Renderer.h"
-#include "Graphics/Material/Pipelines/DefaultPipeline.h"
-#include "Graphics/Material/RenderPasses/DefaultRenderPass.h"
-#include "Graphics/Material/CommandBuffers/CommandBuffer.h"
+#include "Material/Pipelines/DefaultPipeline.h"
+#include "Material/RenderPasses/DefaultRenderPass.h"
+#include "Material/CommandBuffers/CommandBuffer.h"
+#include "Util/GameTime.h"
 
 void Engine::Run()
 {
 	InitWindow();
 	InitVulkan();
 	InitRenderer();
+	InitGame();
 
 	MainLoop();
 
@@ -38,21 +41,22 @@ QueueFamilyIndices Engine::FindQueueFamilies(const VkPhysicalDevice& device, con
 	vkGetPhysicalDeviceQueueFamilyProperties(device, &queueFamilyCount, queueFamilies.data());
 
 	int i = 0;
-	for (const auto& queueFamily : queueFamilies) {
-		if (queueFamily.queueFlags & VK_QUEUE_GRAPHICS_BIT) {
+	for (const auto& queueFamily : queueFamilies)
+	{
+		if (queueFamily.queueFlags & VK_QUEUE_GRAPHICS_BIT)
 			indices.graphicsFamily = i;
-		}
 
 		VkBool32 presentSupport = false;
 		vkGetPhysicalDeviceSurfaceSupportKHR(device, i, surface, &presentSupport);
 
-		if (presentSupport) {
+		if (presentSupport)
 			indices.presentFamily = i;
-		}
 
-		if (indices.isComplete()) {
+		//if (queueFamily.queueFlags & VK_QUEUE_TRANSFER_BIT)
+		//	indices.transferFamily = i;
+
+		if (indices.isComplete())
 			break;
-		}
 
 		i++;
 	}
@@ -83,45 +87,105 @@ void Engine::InitVulkan()
 
 	// Create Logical Device
 	CreateLogicalDevice();
+
+	// Create Command Pool
+	CommandPool::GetInstance().Init(m_GameContext);
 }
 
 void Engine::InitRenderer()
 {
-	m_pRenderer = new Renderer();
-	m_pRenderer->Init(m_GameContext);
+	auto& renderer = Renderer::GetInstance();
+	renderer.Init(m_GameContext);
 
-	auto pMaterial = new Material();
+	m_pMaterial = new Material();
 	// RenderPasses
-	pMaterial->AddRenderPass<DefaultRenderPass>(m_GameContext, *m_pRenderer->GetSwapChain());
+	m_pMaterial->AddRenderPass<DefaultRenderPass>(m_GameContext, *renderer.GetSwapChain());
 	// Graphic Pipelines
-	pMaterial->AddPipeline<DefaultPipeline>(m_GameContext);
+	m_pMaterial->AddPipeline<DefaultPipeline>(m_GameContext);
 	// Command Buffers
-	pMaterial->AddCommandBuffer<CommandBuffer>(m_GameContext);
+	m_pMaterial->AddCommandBuffer<CommandBuffer>(m_GameContext);
 
-	m_pRenderer->AddMaterial(pMaterial);
+	renderer.AddMaterial(m_pMaterial);
 
 	// Frame Buffers
-	m_pRenderer->CreateFrameBuffers(m_GameContext);
+	renderer.CreateFrameBuffers(m_GameContext);
 
-	// Sync Objects ???
-	m_pRenderer->CreateSyncObjects(m_GameContext);
+	// Sync Objects
+	renderer.CreateSyncObjects(m_GameContext);
 
 	ShaderManager::GetInstance().DestroyShaderModules(m_GameContext.vulkanContext.device);
 }
 
+void Engine::InitGame()
+{
+	const std::vector triangleVertices =
+	{
+		PosCol2D{ glm::vec2{0.5f + 0.0f, -0.25f},	glm::vec3{1.0f, 0.0f, 0.0f} },
+		PosCol2D{ glm::vec2{0.5f + 0.25f,  0.25f},	glm::vec3{0.0f, 1.0f, 0.0f} },
+		PosCol2D{ glm::vec2{0.5f + -0.25f, 0.25f},	glm::vec3{0.0f, 0.0f, 1.0f} },
+	};
+
+	const std::vector rectVertices =
+	{
+		PosCol2D{ glm::vec2{-0.5 + -0.25, -0.25},	glm::vec3{1,0,0} },
+		PosCol2D{ glm::vec2{-0.5 + 0.25,  -0.25},	glm::vec3{0,1,0} },
+		PosCol2D{ glm::vec2{-0.5 + -0.25,  0.25},	glm::vec3{0,0,1} },
+		PosCol2D{ glm::vec2{-0.5 + -0.25,  0.25},	glm::vec3{0,0,1} },
+		PosCol2D{ glm::vec2{-0.5 + 0.25,  -0.25},	glm::vec3{0,1,0} },
+		PosCol2D{ glm::vec2{-0.5 + 0.25,   0.25},	glm::vec3{1,1,1} },
+	};
+
+	m_pTriangle = new Mesh(3);
+	for (const auto& v : triangleVertices)
+	{
+		m_pTriangle->AddVertex(v);
+	}
+	m_pTriangle->Init(m_GameContext);
+
+	m_pRectangle = new Mesh(6);
+	for (const auto& v : rectVertices)
+	{
+		m_pRectangle->AddVertex(v);
+	}
+	m_pRectangle->Init(m_GameContext);
+
+	m_pMaterial->BindMesh(m_pTriangle);
+	m_pMaterial->BindMesh(m_pRectangle);
+}
+
 void Engine::MainLoop()
 {
+	auto& time = GameTime::GetInstance();
+	time.Init();
+
+	float timer = 0;
+	constexpr float fpsPrintTime = 1;
+
 	while (!glfwWindowShouldClose(m_GameContext.pWindow))
 	{
 		glfwPollEvents();
-		m_pRenderer->Draw(m_GameContext);
+
+		time.Update();
+
+		Renderer::GetInstance().Draw(m_GameContext);
+
+		timer += time.GetElapsed();
+		if (timer >= fpsPrintTime)
+		{
+			timer = 0;
+			std::cout << "FPS: " << time.GetFPS_Unsigned() << '\n';
+		}
 	}
 	vkDeviceWaitIdle(m_GameContext.vulkanContext.device);
 }
 
 void Engine::CleanUp()
 {
-	m_pRenderer->CleanUp(m_GameContext);
+	Renderer::GetInstance().CleanUp(m_GameContext);
+	m_pTriangle->CleanUp(m_GameContext);
+	m_pRectangle->CleanUp(m_GameContext);
+
+	CommandPool::GetInstance().CleanUp(m_GameContext);
 
 	if (enableValidationLayers)
 	{
@@ -314,7 +378,7 @@ void Engine::CreateLogicalDevice()
 	QueueFamilyIndices indices = FindQueueFamilies(m_GameContext);
 
 	std::vector<VkDeviceQueueCreateInfo> queueCreateInfos;
-	std::set<uint32_t> uniqueQueueFamilies = { indices.graphicsFamily.value(), indices.presentFamily.value() };
+	std::set<uint32_t> uniqueQueueFamilies = { indices.graphicsFamily.value(), indices.presentFamily.value()/*, indices.transferFamily.value()*/ };
 
 	float queuePriority = 1.0f;
 	for (uint32_t queueFamily : uniqueQueueFamilies) {
@@ -338,7 +402,7 @@ void Engine::CreateLogicalDevice()
 
 	createInfo.queueCreateInfoCount = static_cast<uint32_t>(queueCreateInfos.size());
 	createInfo.pQueueCreateInfos = queueCreateInfos.data();
-
+	
 	createInfo.pEnabledFeatures = &deviceFeatures;
 
 	createInfo.enabledExtensionCount = static_cast<uint32_t>(m_DeviceExtensions.size());

@@ -28,16 +28,15 @@ void Renderer::CleanUp(const GameContext& context)
 	vkDestroySemaphore(context.vulkanContext.device, m_ImageAvailableSemaphore, nullptr);
 	vkDestroyFence(context.vulkanContext.device, m_InFlightFence, nullptr);
 
-	m_pMaterial->GetCommandBuffer()->CleanUp(context.vulkanContext.device);
 	for (auto framebuffer : m_SwapChainFrameBuffers) 
 	{
 		vkDestroyFramebuffer(context.vulkanContext.device, framebuffer, nullptr);
 	}
 
+	m_pSwapChain->CleanUp(context);
+
 	m_pMaterial->GetPipeline()->CleanUp(context.vulkanContext.device);
 	m_pMaterial->GetRenderPass()->CleanUp(context.vulkanContext.device);
-
-	m_pSwapChain->CleanUp(context);
 }
 
 void Renderer::CreateFrameBuffers(const GameContext& context)
@@ -46,7 +45,7 @@ void Renderer::CreateFrameBuffers(const GameContext& context)
 	const auto swapChainExtent = m_pSwapChain->GetExtent();
 
 	m_SwapChainFrameBuffers.resize(swapChainImageViews.size());
-	for (size_t i = 0; i < swapChainImageViews.size(); i++)
+	for (size_t i = 0; i < swapChainImageViews.size(); ++i)
 	{
 		VkImageView attachments[] =
 		{
