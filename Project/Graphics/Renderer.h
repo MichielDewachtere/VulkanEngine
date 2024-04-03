@@ -17,8 +17,10 @@ public:
 	Renderer(Renderer&&) = delete;
 	Renderer operator=(Renderer&&) = delete;
 
-	void Init(const GameContext& context);  // NOLINT(clang-diagnostic-overloaded-virtual)
+	void Init(GameContext& context);  // NOLINT(clang-diagnostic-overloaded-virtual)
 	void CleanUp(const GameContext& context);
+
+	void Draw(const GameContext& context);
 
 	void CreateFrameBuffers(const GameContext& context);
 	void CreateSyncObjects(const GameContext& context);
@@ -26,24 +28,26 @@ public:
 	void AddMaterial(Material* pMaterial);
 	SwapChain* GetSwapChain() const { return m_pSwapChain; }
 
-	void Draw(const GameContext& context);
+	uint32_t GetCurrentFrame() const { return m_CurrentFrame; }
+	VkFramebuffer GetCurrentFrameBuffer() const { return m_SwapChainFrameBuffers[m_CurrentFrame]; }
 
 	VkQueue GetGraphicsQueue() const { return m_GraphicsQueue; }
 	VkQueue GetPresentQueue() const { return m_PresentQueue; }
 
 private:
 	friend class Singleton<Renderer>;
-	explicit Renderer() = default;
+	Renderer() = default;
 
+	uint32_t m_CurrentFrame{ 0 };
 	VkQueue m_GraphicsQueue, m_PresentQueue;
-	VkSemaphore m_ImageAvailableSemaphore, m_RenderFinishedSemaphore;
-	VkFence m_InFlightFence;
+	std::vector<VkSemaphore> m_ImageAvailableSemaphores, m_RenderFinishedSemaphores;
+	std::vector<VkFence> m_InFlightFences;
 	SwapChain* m_pSwapChain;
 
 	std::vector<VkFramebuffer> m_SwapChainFrameBuffers;
 
-	Material* m_pMaterial{ nullptr };
-	//std::vector<Material*> m_pMaterials{};
+	//Material* m_pMaterial{ nullptr };
+	std::vector<Material*> m_pMaterials{};
 };
 
 #endif // RENDERER_H
