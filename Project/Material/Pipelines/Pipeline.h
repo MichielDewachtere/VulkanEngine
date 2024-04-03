@@ -16,17 +16,21 @@ public:
 	Pipeline(Pipeline&&) = delete;
 	Pipeline& operator=(Pipeline&&) = delete;
 
-	virtual void CreatePipeline(const VkDevice& device, const RenderPass* pRenderPass) = 0;
+	virtual void CreatePipeline(const VulkanContext& device) = 0;
 	VkPipeline GetPipeline() const { return m_Pipeline; }
+	VkPipelineLayout GetPipelineLayout() const { return m_PipelineLayout; }
+	VkDescriptorSetLayout GetDescriptorSetLayout() const { return m_DescriptorSetLayout; }
 
 	bool IsCreated() const { return m_IsCreated; }
 
-	void CleanUp(VkDevice device);
+	virtual void CleanUp(VkDevice device);
 
 protected:
 	bool m_IsCreated{ false };
 	VkPipeline m_Pipeline;
 	VkPipelineLayout m_PipelineLayout;
+
+	VkDescriptorSetLayout m_DescriptorSetLayout;
 };
 
 #endif // PIPELINE_H
