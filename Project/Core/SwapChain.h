@@ -35,8 +35,8 @@ private:
 
 	static SwapChainSupportDetails QuerySwapChainSupport(const GameContext& context);
 	VkPresentModeKHR ChooseSwapPresentMode(const std::vector<VkPresentModeKHR>& availablePresentModes);
-	VkExtent2D ChooseSwapExtent(GLFWwindow* context, const VkSurfaceCapabilitiesKHR& capabilities) const;
-	VkSurfaceFormatKHR ChooseSwapSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& availableFormats);
+	VkExtent2D ChooseSwapExtent(SDL_Window* pWindow, const VkSurfaceCapabilitiesKHR& capabilities) const;
+	static VkSurfaceFormatKHR ChooseSwapSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& availableFormats);
 };
 
 #endif // SWAPCHAIN_H

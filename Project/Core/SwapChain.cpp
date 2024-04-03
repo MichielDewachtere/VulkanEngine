@@ -1,6 +1,7 @@
 #include "SwapChain.h"
 
 #include <algorithm>
+#include <SDL2/SDL_vulkan.h>
 
 #include "Engine.h"
 
@@ -136,26 +137,23 @@ VkPresentModeKHR SwapChain::ChooseSwapPresentMode(const std::vector<VkPresentMod
 	return VK_PRESENT_MODE_FIFO_KHR;
 }
 
-VkExtent2D SwapChain::ChooseSwapExtent(GLFWwindow* pWindow, const VkSurfaceCapabilitiesKHR& capabilities) const
+VkExtent2D SwapChain::ChooseSwapExtent(SDL_Window* pWindow, const VkSurfaceCapabilitiesKHR& capabilities) const
 {
-	if (capabilities.currentExtent.width != (std::numeric_limits<uint32_t>::max)()) {
+	if (capabilities.currentExtent.width != std::numeric_limits<uint32_t>::max())
 		return capabilities.currentExtent;
-	}
-	else 
-	{
-		int width, height;
-		glfwGetFramebufferSize(pWindow, &width, &height);
 
-		VkExtent2D actualExtent = {
-			static_cast<uint32_t>(width),
-			static_cast<uint32_t>(height)
-		};
+	int width, height;
+	SDL_Vulkan_GetDrawableSize(pWindow, &width, &height);
 
-		actualExtent.width = std::clamp(actualExtent.width, capabilities.minImageExtent.width, capabilities.maxImageExtent.width);
-		actualExtent.height = std::clamp(actualExtent.height, capabilities.minImageExtent.height, capabilities.maxImageExtent.height);
+	VkExtent2D actualExtent = {
+		static_cast<uint32_t>(width),
+		static_cast<uint32_t>(height)
+	};
 
-		return actualExtent;
-	}
+	actualExtent.width = std::clamp(actualExtent.width, capabilities.minImageExtent.width, capabilities.maxImageExtent.width);
+	actualExtent.height = std::clamp(actualExtent.height, capabilities.minImageExtent.height, capabilities.maxImageExtent.height);
+
+	return actualExtent;
 }
 
 VkSurfaceFormatKHR SwapChain::ChooseSwapSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& availableFormats)
