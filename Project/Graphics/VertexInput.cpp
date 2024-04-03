@@ -19,7 +19,7 @@ VkPipelineVertexInputStateCreateInfo VertexInput::GetInfo()
 	return m_VertexInputInfo;
 }
 
-void VertexInput::AddAttribute(const VkFormat format, const UINT size)
+void VertexInput::AddAttribute(const VkFormat format, const uint32_t size)
 {
 	VkVertexInputAttributeDescription attributeDesc;
 	attributeDesc.binding = 0;
@@ -31,7 +31,7 @@ void VertexInput::AddAttribute(const VkFormat format, const UINT size)
 	m_AttributeDescriptions.push_back(attributeDesc);
 }
 
-void VertexInput::AddBinding(UINT size, bool instancing)
+void VertexInput::AddBinding(uint32_t size, bool instancing)
 {
 	VkVertexInputBindingDescription bindingDesc;
 	bindingDesc.binding = m_BindingIndex++;
