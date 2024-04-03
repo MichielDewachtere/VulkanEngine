@@ -1,16 +1,13 @@
 #ifndef MATERIAL_H
 #define MATERIAL_H
 
-#include <vulkan/vulkan_core.h>
+#include "Pipelines/Pipeline.h"
+#include "Core/SwapChain.h"
 
 #include "Util/Logger.h"
 
-#include "Pipelines/Pipeline.h"
-#include "RenderPasses/RenderPass.h"
-#include "CommandBuffers/CommandBuffer.h"
-#include "Core/SwapChain.h"
-
-class Mesh;
+class BaseMesh;
+class SwapChain;
 
 class Material final
 {
@@ -25,61 +22,29 @@ public:
 
 	void CleanUp(const GameContext& context);
 
-	template <typename T>
-		requires std::is_base_of_v<Pipeline, T>
+	template <typename tPipeline>
+		requires std::is_base_of_v<Pipeline, tPipeline>
 	void AddPipeline(const GameContext& context);
-	template <typename T>
-		requires std::is_base_of_v<RenderPass, T>
-	void AddRenderPass(const GameContext& context, const SwapChain& swapChain);
-	template <typename T>
-		requires std::is_base_of_v<CommandBuffer, T>
-	void AddCommandBuffer(const GameContext& context);
 
-	void BindMesh(Mesh* pMesh) { m_pMeshes.push_back(pMesh); }
+	void BindMesh(BaseMesh* pMesh);
 
 	Pipeline* GetPipeline() const { return m_pPipeline.get(); }
-	CommandBuffer* GetCommandBuffer() const { return m_pCommandBuffer.get(); }
-	RenderPass* GetRenderPass() const { return m_pRenderPass.get(); }
+	void DrawFrame(const GameContext& context) const;
 
-	void RecordCommandBuffer(const SwapChain& swapChain, const VkFramebuffer& frameBuffer);
+	bool IsActive() const { return m_IsActive; }
+	void SetIsActive(bool isActive) { m_IsActive = isActive; }
 
 private:
+	bool m_IsActive{ true };
 	std::unique_ptr<Pipeline> m_pPipeline{ nullptr };
-	std::unique_ptr<CommandBuffer> m_pCommandBuffer{ nullptr };
-	std::unique_ptr<RenderPass> m_pRenderPass{ nullptr };
-	std::vector<Mesh*> m_pMeshes;
-
-	void DrawFrame(const SwapChain& swapChain, const VkFramebuffer& frameBuffer);
+	std::vector<BaseMesh*> m_pMeshes;
 };
 
-template <typename T>
-	requires std::is_base_of_v<Pipeline, T>
+template <typename tPipeline>
+	requires std::is_base_of_v<Pipeline, tPipeline>
 void Material::AddPipeline(const GameContext& context)
 {
-	if (m_pRenderPass == nullptr)
-	{
-		Logger::LogError({ "A render pass must first be created before a pipeline" });
-		return;
-	}
-
-	m_pPipeline = std::make_unique<T>();
-	m_pPipeline->CreatePipeline(context.vulkanContext.device, m_pRenderPass.get());
+	m_pPipeline = std::make_unique<tPipeline>();
+	m_pPipeline->CreatePipeline(context.vulkanContext);
 }
-
-template <typename T>
-	requires std::is_base_of_v<RenderPass, T>
-void Material::AddRenderPass(const GameContext& context, const SwapChain& swapChain)
-{
-	m_pRenderPass = std::make_unique<T>();
-	m_pRenderPass->Create(context.vulkanContext.device, swapChain.GetFormat());
-}
-
-template <typename T>
-	requires std::is_base_of_v<CommandBuffer, T>
-void Material::AddCommandBuffer(const GameContext& context)
-{
-	m_pCommandBuffer = std::make_unique<T>();
-	m_pCommandBuffer->CreateCommandBuffer(context.vulkanContext);
-}
-
 #endif // MATERIAL_H
