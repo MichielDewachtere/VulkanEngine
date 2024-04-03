@@ -1,12 +1,7 @@
-#pragma once
+#ifndef VULKANUTIL_H
+#define VULKANUTIL_H
 
-#pragma once
-
-#define VK_USE_PLATFORM_WIN32_KHR
-#define GLFW_INCLUDE_VULKAN
-#include <GLFW/glfw3.h>
-#define GLFW_EXPOSE_NATIVE_WIN32
-#include <GLFW/glfw3native.h>
+#define MAX_FRAMES_IN_FLIGHT 2
 
 #include "structs.h"
 
@@ -24,4 +19,11 @@ VkResult CreateDebugUtilsMessengerEXT(VkInstance instance, const VkDebugUtilsMes
 
 void DestroyDebugUtilsMessengerEXT(VkInstance instance, VkDebugUtilsMessengerEXT debugMessenger, const VkAllocationCallbacks* pAllocator);
 
+uint32_t FindMemoryType(const GameContext& context, uint32_t typeFilter, VkMemoryPropertyFlags properties);
+
+void CreateImage(const GameContext& context, uint32_t width, uint32_t height, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage, VkMemoryPropertyFlags properties, VkImage& image, VkDeviceMemory& imageMemory);
+VkImageView CreateImageView(const GameContext& context, VkImage image, VkFormat format, VkImageAspectFlags aspectFlags);
+
 std::vector<char> readFile(const std::string& filename);
+
+#endif // VULKANUTIL_H
