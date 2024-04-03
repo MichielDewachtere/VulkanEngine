@@ -1,19 +1,16 @@
 #ifndef ENGINE_H
 #define ENGINE_H
 
-#define VK_USE_PLATFORM_WIN32_KHR
-#define GLFW_INCLUDE_VULKAN
-#include <GLFW/glfw3.h>
-#define GLFW_EXPOSE_NATIVE_WIN32
-#include <GLFW/glfw3native.h>
+#define GLM_FORCE_DEPTH_ZERO_TO_ONE
 
 #include <iostream>
 #include <vulkan/vulkan_core.h>
 #include "Util/Structs.h"
-class Mesh;
-class Material;
+#include "Mesh/MeshIndexed.h"
+
 class Renderer;
 class SwapChain;
+class Material;
 
 class Engine final
 {
@@ -36,10 +33,12 @@ private:
 
 	VkInstance m_Instance{ nullptr };
 	VkDebugUtilsMessengerEXT m_DebugMessenger{ nullptr };
-	//Renderer* m_pRenderer;
 
-	Material* m_pMaterial;
-	Mesh* m_pTriangle, *m_pRectangle;
+	Material * m_pPosCol2D{ nullptr }, * m_pPosColNorm{ nullptr };
+	Mesh<PosCol2D>* m_pTriangle{ nullptr };
+	MeshIndexed<PosCol2D>* m_pRectangle{ nullptr };
+
+	MeshIndexed<PosColNorm>* m_pCube1{ nullptr }, * m_pCube2{ nullptr };
 
 	const std::vector<const char*> m_ValidationLayers =
 	{
@@ -61,7 +60,7 @@ private:
 	void CleanUp();
 
 	void CreateInstance();
-	static std::vector<const char*> GetRequiredExtensions();
+	std::vector<const char*> GetRequiredExtensions();
 	void PopulateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT& createInfo);
 	bool CheckValidationLayerSupport();
 
@@ -79,7 +78,6 @@ private:
 		std::cerr << "validation layer: " << pCallbackData->pMessage << std::endl;
 		return VK_FALSE;
 	}
-
 };
 
 #endif // ENGINE_H
