@@ -5,29 +5,28 @@
 #include <vulkan/vulkan_core.h>
 
 #include "Util/Singleton.h"
+#include "CommandBuffers/CommandBuffer.h"
 
 struct GameContext;
-class CommandBuffer;
 
-//TODO: This could use the service locator pattern or singleton manager?
 class CommandPool final : public Singleton<CommandPool>
 {
 public:
 	virtual ~CommandPool() override = default;
 
 	void Init(const GameContext& context);  // NOLINT(clang-diagnostic-overloaded-virtual)
-	void CleanUp(const GameContext& context);
+	void CleanUp(const GameContext& context) const;
 
 	VkCommandPool GetCommandPool() const { return m_CommandPool; }
-	//VkCommandPool GetCommandPool() const { return *m_pCommandPool; }
-	//void FreeCommandBuffer();
+
+	VkCommandBuffer GetCommandBuffer(uint32_t frame) const;
 
 private:
 	friend class Singleton<CommandPool>;
 	CommandPool() = default;
 
 	VkCommandPool m_CommandPool;
-	//std::unique_ptr<VkCommandPool> m_pCommandPool;
+	std::unique_ptr<CommandBuffer> m_pCommandBuffer;
 };
 
 #endif // COMMANDPOOL_H
