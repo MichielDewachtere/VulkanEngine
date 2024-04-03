@@ -43,19 +43,31 @@ set(SOURCES
     "Core/SwapChain.h" 
     "Core/CommandPool.h" 
     "Core/CommandPool.cpp" 
+    "Core/CommandBuffers/CommandBuffer.cpp" 
+    "Core/CommandBuffers/CommandBuffer.h" 
 
     # Renderer
     "Graphics/Renderer.cpp" 
     "Graphics/Renderer.h" 
+    
+    # Render Pass
+    "Graphics/RenderPass.h" 
+    "Graphics/RenderPass.cpp" 
+    
     # ShaderManager
     "Graphics/ShaderManager.cpp" 
     "Graphics/ShaderManager.h" 
+    
     # Vertex Input
     "Graphics/VertexInput.cpp" 
     "Graphics/VertexInput.h" 
+    
     # Mesh
+    "Mesh/BaseMesh.h"
     "Mesh/Mesh.h" 
     "Mesh/Mesh.cpp" 
+    "Mesh/MeshIndexed.h" 
+    "Mesh/MeshIndexed.cpp" 
     
     # Material
     "Material/Material.cpp"
@@ -63,21 +75,29 @@ set(SOURCES
         # Pipeline
     "Material/Pipelines/Pipeline.cpp" 
     "Material/Pipelines/Pipeline.h" 
-    "Material/Pipelines/DefaultPipeline.cpp" 
-    "Material/Pipelines/DefaultPipeline.h" 
-        # Render Pass
-    "Material/RenderPasses/RenderPass.h" 
-    "Material/RenderPasses/RenderPass.cpp" 
-    "Material/RenderPasses/DefaultRenderPass.cpp" 
-    "Material/RenderPasses/DefaultRenderPass.h" 
-        # Command Buffer
-    "Material/CommandBuffers/CommandBuffer.cpp" 
-    "Material/CommandBuffers/CommandBuffer.h" 
-)
+    "Material/Pipelines/PosCol2DPipeline.cpp" 
+    "Material/Pipelines/PosCol2DPipeline.h" 
+    "Material/Pipelines/PosColNormPipeline.cpp" 
+    "Material/Pipelines/PosColNormPipeline.h" 
+    
+    # Camera
+    "Misc/Camera.cpp" 
+    "Misc/Camera.h"
+    
+    # Input
+    "Misc/InputManager.cpp" 
+    "Misc/InputManager.h"
+    
+    "Mesh/PrimitiveFactory.h" 
+    "Mesh/PrimitiveFactory.cpp" 
+    "Mesh/MeshFactory.h"
+    "Mesh/MeshFactory.cpp"
+ "Core/DepthBuffer/DepthBuffer.cpp" "Core/DepthBuffer/DepthBuffer.h" "Core/DepthBuffer/DepthBufferManager.cpp" "Core/DepthBuffer/DepthBufferManager.h")
 
 # Create the executable
 add_executable(${PROJECT_NAME} ${SOURCES} ${GLSL_SOURCE_FILES} )
 add_dependencies(${PROJECT_NAME} Shaders)
 # Link libraries
 target_include_directories(${PROJECT_NAME} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
-target_link_libraries(${PROJECT_NAME} PRIVATE ${Vulkan_LIBRARIES} glfw)
+#target_link_libraries(${PROJECT_NAME} PRIVATE ${Vulkan_LIBRARIES} glfw)
+target_link_libraries(${PROJECT_NAME} PRIVATE ${Vulkan_LIBRARIES} SDL2::SDL2 SDL2::SDL2main)
