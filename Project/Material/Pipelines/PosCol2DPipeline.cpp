@@ -1,6 +1,5 @@
 #include "PosCol2DPipeline.h"
 
-#include "../RenderPasses/RenderPass.h"
 #include "Graphics/ShaderManager.h"
 #include "Graphics/VertexInput.h"
 
@@ -9,15 +8,15 @@ void PosCol2DPipeline::CleanUp(VkDevice device)
 	Pipeline::CleanUp(device);
 }
 
-void PosCol2DPipeline::CreatePipeline(const VkDevice& device, const RenderPass* pRenderPass)
+void PosCol2DPipeline::CreatePipeline(const VulkanContext& vulkan)
 {
 	if (m_IsCreated)
 		return;
 
 	// Create Shaders
 	ShaderManager::GetInstance().Init("shaders");
-	auto vertShaderStageInfo = ShaderManager::GetInstance().CreateShaderInfo(device, ShaderType::vertex, "poscol2d.vert.spv");
-	auto fragShaderStageInfo = ShaderManager::GetInstance().CreateShaderInfo(device, ShaderType::fragment, "poscol2d.frag.spv");
+	auto vertShaderStageInfo = ShaderManager::GetInstance().CreateShaderInfo(vulkan.device, ShaderType::vertex, "poscol2d.vert.spv");
+	auto fragShaderStageInfo = ShaderManager::GetInstance().CreateShaderInfo(vulkan.device, ShaderType::fragment, "poscol2d.frag.spv");
 
 	std::vector shaderStages = { vertShaderStageInfo, fragShaderStageInfo };
 
@@ -28,9 +27,6 @@ void PosCol2DPipeline::CreatePipeline(const VkDevice& device, const RenderPass* 
 	vi->AddAttribute(VK_FORMAT_R32G32B32_SFLOAT, 12);
 	const auto assemblyStateInfo = VertexInput::CreateInputAssemblyStateInfo(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST);
 	const auto vertexInputInfo = vi->GetInfo();
-
-	// Create Descriptor
-	CreateDescriptorSetLayout(device);
 
 	VkPipelineViewportStateCreateInfo viewportState{};
 	viewportState.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
@@ -44,7 +40,7 @@ void PosCol2DPipeline::CreatePipeline(const VkDevice& device, const RenderPass* 
 	rasterizer.polygonMode = VK_POLYGON_MODE_FILL;
 	rasterizer.lineWidth = 1.0f;
 	rasterizer.cullMode = VK_CULL_MODE_BACK_BIT;
-	rasterizer.frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE;
+	rasterizer.frontFace = VK_FRONT_FACE_CLOCKWISE;
 	rasterizer.depthBiasEnable = VK_FALSE;
 
 	VkPipelineMultisampleStateCreateInfo multisampling{};
@@ -67,6 +63,13 @@ void PosCol2DPipeline::CreatePipeline(const VkDevice& device, const RenderPass* 
 	colorBlending.blendConstants[2] = 0.0f;
 	colorBlending.blendConstants[3] = 0.0f;
 
+	VkPipelineDepthStencilStateCreateInfo depthStencil{};
+	depthStencil.sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
+	depthStencil.depthTestEnable = VK_TRUE;
+	depthStencil.depthWriteEnable = VK_TRUE;
+	depthStencil.depthCompareOp = VK_COMPARE_OP_LESS;
+	depthStencil.depthBoundsTestEnable = VK_FALSE;
+
 	std::vector<VkDynamicState> dynamicStates = {
 		VK_DYNAMIC_STATE_VIEWPORT,
 		VK_DYNAMIC_STATE_SCISSOR
@@ -78,11 +81,11 @@ void PosCol2DPipeline::CreatePipeline(const VkDevice& device, const RenderPass* 
 
 	VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
 	pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-	pipelineLayoutInfo.setLayoutCount = 1;
-	pipelineLayoutInfo.pSetLayouts = &m_DescriptorSetLayout;
+	//pipelineLayoutInfo.setLayoutCount = 1;
+	//pipelineLayoutInfo.pSetLayouts = &m_DescriptorSetLayout;
 	pipelineLayoutInfo.pushConstantRangeCount = 0;
 
-	if (vkCreatePipelineLayout(device, &pipelineLayoutInfo, nullptr, &m_PipelineLayout) != VK_SUCCESS) {
+	if (vkCreatePipelineLayout(vulkan.device, &pipelineLayoutInfo, nullptr, &m_PipelineLayout) != VK_SUCCESS) {
 		throw std::runtime_error("failed to create pipeline layout!");
 	}
 
@@ -97,35 +100,17 @@ void PosCol2DPipeline::CreatePipeline(const VkDevice& device, const RenderPass* 
 	pipelineInfo.pMultisampleState = &multisampling;
 	pipelineInfo.pColorBlendState = &colorBlending;
 	pipelineInfo.pDynamicState = &dynamicState;
+	pipelineInfo.pDepthStencilState = &depthStencil;
 	pipelineInfo.layout = m_PipelineLayout;
-	pipelineInfo.renderPass = pRenderPass->GetRenderPass();
+	pipelineInfo.renderPass = vulkan.renderPass;
 	pipelineInfo.subpass = 0;
 	pipelineInfo.basePipelineHandle = VK_NULL_HANDLE;
 
-	const auto result = vkCreateGraphicsPipelines(device, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &m_Pipeline);
+	const auto result = vkCreateGraphicsPipelines(vulkan.device, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &m_Pipeline);
 	if (result != VK_SUCCESS)
 	{
 		throw std::runtime_error("failed to create graphics pipeline!");
 	}
 
 	m_IsCreated = true;
-}
-
-void PosCol2DPipeline::CreateDescriptorSetLayout(const VkDevice& device)
-{
-	VkDescriptorSetLayoutBinding uboLayoutBinding;
-	uboLayoutBinding.binding = 0;
-	uboLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-	uboLayoutBinding.descriptorCount = 1;
-	uboLayoutBinding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
-	uboLayoutBinding.pImmutableSamplers = nullptr; // Optional
-
-	VkDescriptorSetLayoutCreateInfo layoutInfo{};
-	layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-	layoutInfo.bindingCount = 1;
-	layoutInfo.pBindings = &uboLayoutBinding;
-
-	if (vkCreateDescriptorSetLayout(device, &layoutInfo, nullptr, &m_DescriptorSetLayout) != VK_SUCCESS) {
-		throw std::runtime_error("failed to create descriptor set layout!");
-	}
 }
