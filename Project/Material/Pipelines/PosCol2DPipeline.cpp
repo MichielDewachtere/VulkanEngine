@@ -1,7 +1,7 @@
 #include "PosCol2DPipeline.h"
 
 #include "Graphics/ShaderManager.h"
-#include "Graphics/VertexInput.h"
+#include "Util/VulkanUtil.h"
 
 void PosCol2DPipeline::CleanUp(VkDevice device)
 {
@@ -20,13 +20,15 @@ void PosCol2DPipeline::CreatePipeline(const VulkanContext& vulkan)
 
 	std::vector shaderStages = { vertShaderStageInfo, fragShaderStageInfo };
 
-	// Create Vertex Input
-	auto vi = new VertexInput();
-	vi->AddBinding<PosCol2D>(false);
-	vi->AddAttribute(VK_FORMAT_R32G32_SFLOAT, 8);
-	vi->AddAttribute(VK_FORMAT_R32G32B32_SFLOAT, 12);
-	const auto assemblyStateInfo = VertexInput::CreateInputAssemblyStateInfo(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST);
-	const auto vertexInputInfo = vi->GetInfo();
+	const auto assemblyStateInfo = CreateInputAssemblyStateInfo(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST);
+
+	VkPipelineVertexInputStateCreateInfo vertexInputInfo{};
+	const VkVertexInputBindingDescription bindingDescription = PosCol2D::GetBindingDescription();
+	vertexInputInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
+	vertexInputInfo.pVertexAttributeDescriptions = PosCol2D::GetAttributeDescriptions().data();
+	vertexInputInfo.vertexAttributeDescriptionCount = static_cast<uint32_t>(PosCol2D::GetAttributeDescriptions().size());
+	vertexInputInfo.pVertexBindingDescriptions = &bindingDescription;
+	vertexInputInfo.vertexBindingDescriptionCount = 1;
 
 	VkPipelineViewportStateCreateInfo viewportState{};
 	viewportState.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
@@ -81,8 +83,6 @@ void PosCol2DPipeline::CreatePipeline(const VulkanContext& vulkan)
 
 	VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
 	pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-	//pipelineLayoutInfo.setLayoutCount = 1;
-	//pipelineLayoutInfo.pSetLayouts = &m_DescriptorSetLayout;
 	pipelineLayoutInfo.pushConstantRangeCount = 0;
 
 	if (vkCreatePipelineLayout(vulkan.device, &pipelineLayoutInfo, nullptr, &m_PipelineLayout) != VK_SUCCESS) {

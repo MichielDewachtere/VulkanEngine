@@ -4,6 +4,7 @@
 #include <optional>
 #include <string>
 #include <vector>
+#include <array>
 #include <vulkan/vulkan_core.h>
 #include <glm/glm.hpp>
 #include <SDL2/SDL.h>
@@ -51,6 +52,35 @@ struct PosCol2D
 {
 	glm::vec2 pos;
 	glm::vec3 color;
+
+	static VkVertexInputBindingDescription GetBindingDescription()
+	{
+		VkVertexInputBindingDescription bindingDescription{};
+		bindingDescription.binding = 0;
+		bindingDescription.stride = sizeof(PosCol2D);
+		bindingDescription.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
+
+		return bindingDescription;
+	}
+
+	static constexpr size_t attribute_count = 2; // Define the size of the attribute array
+
+	static std::array<VkVertexInputAttributeDescription, attribute_count> GetAttributeDescriptions()
+	{
+		std::array<VkVertexInputAttributeDescription, attribute_count> attributeDescriptions{};
+
+		attributeDescriptions[0].binding = 0;
+		attributeDescriptions[0].location = 0;
+		attributeDescriptions[0].format = VK_FORMAT_R32G32_SFLOAT;
+		attributeDescriptions[0].offset = offsetof(PosCol2D, pos);
+
+		attributeDescriptions[1].binding = 0;
+		attributeDescriptions[1].location = 1;
+		attributeDescriptions[1].format = VK_FORMAT_R32G32B32_SFLOAT;
+		attributeDescriptions[1].offset = offsetof(PosCol2D, color);
+
+		return attributeDescriptions;
+	}
 };
 
 struct alignas(16) PosColNorm
@@ -58,6 +88,40 @@ struct alignas(16) PosColNorm
 	glm::vec3 pos;
 	glm::vec3 color;
 	glm::vec3 normal;
+
+	static VkVertexInputBindingDescription GetBindingDescription()
+	{
+		VkVertexInputBindingDescription bindingDescription{};
+		bindingDescription.binding = 0;
+		bindingDescription.stride = sizeof(PosColNorm);
+		bindingDescription.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
+
+		return bindingDescription;
+	}
+
+	static constexpr size_t attribute_count = 3; // Define the size of the attribute array
+
+	static std::array<VkVertexInputAttributeDescription, attribute_count> GetAttributeDescriptions()
+	{
+		std::array<VkVertexInputAttributeDescription, attribute_count> attributeDescriptions{};
+
+		attributeDescriptions[0].binding = 0;
+		attributeDescriptions[0].location = 0;
+		attributeDescriptions[0].format = VK_FORMAT_R32G32B32_SFLOAT;
+		attributeDescriptions[0].offset = offsetof(PosColNorm, pos);
+
+		attributeDescriptions[1].binding = 0;
+		attributeDescriptions[1].location = 1;
+		attributeDescriptions[1].format = VK_FORMAT_R32G32B32_SFLOAT;
+		attributeDescriptions[1].offset = offsetof(PosColNorm, color);
+
+		attributeDescriptions[2].binding = 0;
+		attributeDescriptions[2].location = 2;
+		attributeDescriptions[2].format = VK_FORMAT_R32G32B32_SFLOAT;
+		attributeDescriptions[2].offset = offsetof(PosColNorm, normal);
+
+		return attributeDescriptions;
+	}
 };
 
 //struct TrianglePosCol

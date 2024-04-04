@@ -1,7 +1,7 @@
 #include "PosColNormPipeline.h"
 
 #include "Graphics/ShaderManager.h"
-#include "Graphics/VertexInput.h"
+#include "Util/VulkanUtil.h"
 
 void PosColNormPipeline::CleanUp(VkDevice device)
 {
@@ -20,14 +20,15 @@ void PosColNormPipeline::CreatePipeline(const VulkanContext& vulkan)
 
 	std::vector shaderStages = { vertShaderStageInfo, fragShaderStageInfo };
 
-	// Create Vertex Input
-	auto vi = new VertexInput();
-	vi->AddBinding<PosColNorm>();
-	vi->AddAttribute(VK_FORMAT_R32G32B32_SFLOAT, 12);
-	vi->AddAttribute(VK_FORMAT_R32G32B32_SFLOAT, 12);
-	vi->AddAttribute(VK_FORMAT_R32G32B32_SFLOAT, 12);
-	const auto assemblyStateInfo = VertexInput::CreateInputAssemblyStateInfo(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST);
-	const auto vertexInputInfo = vi->GetInfo();
+	const auto assemblyStateInfo = CreateInputAssemblyStateInfo(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST);
+
+	VkPipelineVertexInputStateCreateInfo vertexInputInfo{};
+	const VkVertexInputBindingDescription bindingDescription = PosColNorm::GetBindingDescription();
+	vertexInputInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
+	vertexInputInfo.pVertexAttributeDescriptions = PosColNorm::GetAttributeDescriptions().data();
+	vertexInputInfo.vertexAttributeDescriptionCount = static_cast<uint32_t>(PosColNorm::GetAttributeDescriptions().size());
+	vertexInputInfo.pVertexBindingDescriptions = &bindingDescription;
+	vertexInputInfo.vertexBindingDescriptionCount = 1;
 
 	// Create Descriptor
 	CreateDescriptorSetLayout(vulkan.device);
