@@ -90,6 +90,22 @@ VkImageView CreateImageView(const GameContext& context, VkImage image, VkFormat 
     return imageView;
 }
 
+VkPipelineInputAssemblyStateCreateInfo CreateInputAssemblyStateInfo(VkPrimitiveTopology topology)
+{
+    VkPipelineInputAssemblyStateCreateInfo inputAssembly{};
+    inputAssembly.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
+    inputAssembly.topology = topology;
+    if (topology == VK_PRIMITIVE_TOPOLOGY_LINE_STRIP
+        || topology == VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP
+        || topology == VK_PRIMITIVE_TOPOLOGY_LINE_STRIP_WITH_ADJACENCY
+        || topology == VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP_WITH_ADJACENCY)
+        inputAssembly.primitiveRestartEnable = VK_TRUE;
+    else
+        inputAssembly.primitiveRestartEnable = VK_FALSE;
+
+    return inputAssembly;
+}
+
 std::vector<char> readFile(const std::string& filename) {
 	std::ifstream file(filename, std::ios::ate | std::ios::binary);
 
