@@ -7,6 +7,7 @@
 #include "InputManager.h"
 #include "Graphics/Renderer.h"
 #include "Util/GameTime.h"
+#include "Core/SwapChain.h"
 
 void Camera::Init(const GameContext& context)
 {
