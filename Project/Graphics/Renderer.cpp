@@ -7,6 +7,7 @@
 #include "Core/SwapChain.h"
 #include "Core/CommandBuffers/CommandBuffer.h"
 #include "Core/DepthBuffer/DepthBufferManager.h"
+#include "Material/MaterialManager.h"
 
 void Renderer::Init(GameContext& context)
 {
@@ -53,11 +54,6 @@ void Renderer::CleanUp(const GameContext& context)
 	}
 
 	m_pSwapChain->CleanUp(context);
-
-	for (const auto& pMaterial : m_pMaterials)
-	{
-		pMaterial->GetPipeline()->CleanUp(context.vulkanContext.device);
-	}
 }
 
 void Renderer::CreateFrameBuffers(const GameContext& context)
@@ -113,11 +109,6 @@ void Renderer::CreateSyncObjects(const GameContext& context)
 	}
 }
 
-void Renderer::AddMaterial(Material* pMaterial)
-{
-	m_pMaterials.push_back(pMaterial);
-}
-
 void Renderer::Draw(const GameContext& context)
 {
 	vkWaitForFences(context.vulkanContext.device, 1, &m_InFlightFences[m_CurrentFrame], VK_TRUE, UINT64_MAX);
@@ -126,7 +117,6 @@ void Renderer::Draw(const GameContext& context)
 	uint32_t imageIndex;
 	vkAcquireNextImageKHR(context.vulkanContext.device, m_pSwapChain->GetSwapChain(), UINT64_MAX,
 	                      m_ImageAvailableSemaphores[m_CurrentFrame], VK_NULL_HANDLE, &imageIndex);
-
 
 	VkRenderPassBeginInfo renderPassInfo{};
 	renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
@@ -145,7 +135,7 @@ void Renderer::Draw(const GameContext& context)
 	CommandBuffer::StartRecording(commandBuffer);
 	vkCmdBeginRenderPass(commandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
 
-	for (const auto& pMaterial : m_pMaterials)
+	for (const auto& pMaterial : MaterialManager::GetInstance().GetMaterials())
 	{
 		if (pMaterial->IsActive())
 			pMaterial->DrawFrame(m_CurrentFrame, m_pSwapChain->GetExtent());

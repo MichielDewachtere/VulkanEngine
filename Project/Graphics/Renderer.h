@@ -1,7 +1,6 @@
 #ifndef RENDERER_H
 #define RENDERER_H
 
-#include "Material/Material.h"
 #include "Util/Singleton.h"
 #include "Util/Structs.h"
 
@@ -22,10 +21,6 @@ public:
 
 	void Draw(const GameContext& context);
 
-	void CreateFrameBuffers(const GameContext& context);
-	void CreateSyncObjects(const GameContext& context);
-
-	void AddMaterial(Material* pMaterial);
 	SwapChain* GetSwapChain() const { return m_pSwapChain; }
 
 	uint32_t GetCurrentFrame() const { return m_CurrentFrame; }
@@ -43,11 +38,10 @@ private:
 	std::vector<VkSemaphore> m_ImageAvailableSemaphores, m_RenderFinishedSemaphores;
 	std::vector<VkFence> m_InFlightFences;
 	SwapChain* m_pSwapChain;
-
 	std::vector<VkFramebuffer> m_SwapChainFrameBuffers;
 
-	//Material* m_pMaterial{ nullptr };
-	std::vector<Material*> m_pMaterials{};
+	void CreateFrameBuffers(const GameContext& context);
+	void CreateSyncObjects(const GameContext& context);
 };
 
 #endif // RENDERER_H
