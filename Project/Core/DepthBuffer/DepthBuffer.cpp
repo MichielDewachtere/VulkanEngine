@@ -3,6 +3,7 @@
 #include <stdexcept>
 
 #include "Graphics/Renderer.h"
+#include "Core/SwapChain.h"
 #include "Util/VulkanUtil.h"
 
 DepthBuffer::DepthBuffer(const GameContext& context)
