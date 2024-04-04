@@ -148,7 +148,7 @@ void Renderer::Draw(const GameContext& context)
 	for (const auto& pMaterial : m_pMaterials)
 	{
 		if (pMaterial->IsActive())
-			pMaterial->DrawFrame(context);
+			pMaterial->DrawFrame(m_CurrentFrame, m_pSwapChain->GetExtent());
 	}
 
 	vkCmdEndRenderPass(commandBuffer);
