@@ -10,7 +10,6 @@
 
 class Renderer;
 class SwapChain;
-class Material;
 
 class Engine final
 {
@@ -34,7 +33,7 @@ private:
 	VkInstance m_Instance{ nullptr };
 	VkDebugUtilsMessengerEXT m_DebugMessenger{ nullptr };
 
-	Material * m_pPosCol2D{ nullptr }, * m_pPosColNorm{ nullptr };
+	uint8_t m_pPosCol2D, m_pPosColNorm;
 	Mesh<PosCol2D>* m_pTriangle{ nullptr };
 	MeshIndexed<PosCol2D>* m_pRectangle{ nullptr };
 

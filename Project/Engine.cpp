@@ -14,6 +14,8 @@
 #include "Mesh/MeshIndexed.h"
 #include "Util/GameTime.h"
 #include "Material/Material.h"
+#include "Material/MaterialManager.h"
+#include "Mesh/BaseMesh.h"
 #include "Mesh/BaseMesh.h"
 #include "Mesh/MeshFactory.h"
 
@@ -120,22 +122,22 @@ void Engine::InitVulkan()
 
 void Engine::InitRenderer()
 {
+	auto& materialManager = MaterialManager::GetInstance();
 	auto& renderer = Renderer::GetInstance();
 	renderer.Init(m_GameContext);
 
-	m_pPosCol2D = new Material();
-	m_pPosColNorm = new Material();
-	m_pPosCol2D->AddPipeline<PosCol2DPipeline>(m_GameContext);
-	m_pPosColNorm->AddPipeline<PosColNormPipeline>(m_GameContext);
-
-	renderer.AddMaterial(m_pPosCol2D);
-	renderer.AddMaterial(m_pPosColNorm);
+	//m_pPosCol2D = materialManager.AddMaterial<PosCol2DPipeline, PosCol2D>(m_GameContext).first;
+	//m_pPosColNorm = materialManager.AddMaterial<PosColNormPipeline, PosColNorm>(m_GameContext).first;
+	materialManager.AddMaterial<PosCol2DPipeline, PosCol2D>(m_GameContext);
+	materialManager.AddMaterial<PosColNormPipeline, PosColNorm>(m_GameContext);
 
 	ShaderManager::GetInstance().DestroyShaderModules(m_GameContext.vulkanContext.device);
 }
 
 void Engine::InitGame()
 {
+	auto& materialManager = MaterialManager::GetInstance();
+
 	{
 		const std::vector triangleVertices{
 			PosCol2D{ glm::vec2{0.5f + 0.0f, -0.25f},	glm::vec3{1.0f, 0.0f, 0.0f} },
@@ -144,16 +146,12 @@ void Engine::InitGame()
 		};
 
 		m_pTriangle = new Mesh<PosCol2D>(3, true);
-		m_pPosCol2D->BindMesh(m_pTriangle);
-		for (const auto& v : triangleVertices)
-		{
-			m_pTriangle->AddVertex(v);
-		}
+		materialManager.GetMaterial<PosCol2DPipeline, PosCol2D>()->BindMesh(m_GameContext, m_pTriangle);
+		m_pTriangle->AddVertices(triangleVertices);
 		m_pTriangle->Init(m_GameContext);
 	}
 	{
-		const std::vector rectVertices =
-	   {
+		const std::vector rectVertices ={
 			PosCol2D{ glm::vec2{-0.5 + -0.25, -0.25},	glm::vec3{1,0,0} },
 			PosCol2D{ glm::vec2{-0.5 + 0.25,  -0.25},	glm::vec3{0,1,0} },
 			PosCol2D{ glm::vec2{-0.5 + 0.25,   0.25},	glm::vec3{0,0,1} },
@@ -165,45 +163,27 @@ void Engine::InitGame()
 		};
 
 		m_pRectangle = new MeshIndexed<PosCol2D>(4, 6, true);
-		m_pPosCol2D->BindMesh(m_pRectangle);
-		for (const auto& v : rectVertices)
-		{
-			m_pRectangle->AddVertex(v);
-		}
-		for (const auto& i : indices)
-		{
-			m_pRectangle->AddIndex(i);
-		}
+		materialManager.GetMaterial<PosCol2DPipeline, PosCol2D>()->BindMesh(m_GameContext, m_pRectangle);
+		m_pRectangle->AddVertices(rectVertices);
+		m_pRectangle->AddIndices(indices);
 		m_pRectangle->Init(m_GameContext);
 	}
 	{
 		auto [indices, vertices] = MeshFactory::CreateCube({ 0,0,0 }, 1);
 		m_pCube1 = new MeshIndexed<PosColNorm>(static_cast<uint32_t>(vertices.size()),
 		                                      static_cast<uint32_t>(indices.size()), false);
-		m_pPosColNorm->BindMesh(m_pCube1);
-		for (const auto& v : vertices)
-		{
-			m_pCube1->AddVertex(v);
-		}
-		for (const auto& i : indices)
-		{
-			m_pCube1->AddIndex(i);
-		}
+		materialManager.GetMaterial<PosColNormPipeline, PosColNorm>()->BindMesh(m_GameContext, m_pCube1);
+		m_pCube1->AddVertices(vertices);
+		m_pCube1->AddIndices(indices);
 		m_pCube1->Init(m_GameContext);
 	}
 	{
 		auto [indices, vertices] = MeshFactory::CreateCube({ 2,0,0 }, 1);
 		m_pCube2 = new MeshIndexed<PosColNorm>(static_cast<uint32_t>(vertices.size()),
 		                                      static_cast<uint32_t>(indices.size()), false);
-		m_pPosColNorm->BindMesh(m_pCube2);
-		for (const auto& v : vertices)
-		{
-			m_pCube2->AddVertex(v);
-		}
-		for (const auto& i : indices)
-		{
-			m_pCube2->AddIndex(i);
-		}
+		materialManager.GetMaterial<PosColNormPipeline, PosColNorm>()->BindMesh(m_GameContext, m_pCube2);
+		m_pCube2->AddVertices(vertices);
+		m_pCube2->AddIndices(indices);
 		m_pCube2->Init(m_GameContext);
 	}
 }
@@ -265,14 +245,16 @@ void Engine::MainLoop()
 		}
 		if (InputManager::GetInstance().IsKeyboardKey(InputState::pressed, SDL_SCANCODE_F3))
 		{
-			m_pPosCol2D->SetIsActive(!m_pPosCol2D->IsActive());
-			auto s = m_pPosCol2D->IsActive() ? "\033[1;32mON\033[0m" : "\033[1;31mOFF\033[0m";
+			const auto material = MaterialManager::GetInstance().GetMaterial<PosCol2DPipeline, PosCol2D>();
+			material->SetIsActive(!material->IsActive());
+			auto s = material->IsActive() ? "\033[1;32mON\033[0m" : "\033[1;31mOFF\033[0m";
 			std::cout << "2D pipeline turned " << s << "\n";
 		}
 		if (InputManager::GetInstance().IsKeyboardKey(InputState::pressed, SDL_SCANCODE_F4))
 		{
-			m_pPosColNorm->SetIsActive(!m_pPosColNorm->IsActive());
-			auto s = m_pPosColNorm->IsActive() ? "\033[1;32mON\033[0m" : "\033[1;31mOFF\033[0m";
+			const auto material = MaterialManager::GetInstance().GetMaterial<PosColNormPipeline, PosColNorm>();
+			material->SetIsActive(!material->IsActive());
+			auto s = material->IsActive() ? "\033[1;32mON\033[0m" : "\033[1;31mOFF\033[0m";
 			std::cout << "3D pipeline turned " << s << "\n";
 		}
 #pragma endregion DEBUG STUFF
@@ -292,6 +274,7 @@ void Engine::CleanUp()
 {
 	Renderer::GetInstance().CleanUp(m_GameContext);
 	DepthBufferManager::GetInstance().CleanUp(m_GameContext);
+	MaterialManager::GetInstance().RemoveMaterials(m_GameContext);
 
 	vkDestroyRenderPass(m_GameContext.vulkanContext.device, m_GameContext.vulkanContext.renderPass, nullptr);
 
