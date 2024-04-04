@@ -15,8 +15,6 @@
 #include "Util/GameTime.h"
 #include "Material/Material.h"
 #include "Material/MaterialManager.h"
-#include "Mesh/BaseMesh.h"
-#include "Mesh/BaseMesh.h"
 #include "Mesh/MeshFactory.h"
 
 #include "Misc/Camera.h"

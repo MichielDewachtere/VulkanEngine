@@ -64,7 +64,7 @@ set(SOURCES
     "Graphics/ShaderManager.h" 
     
     # Mesh
-    "Mesh/BaseMesh.h"
+    
     "Mesh/Mesh.h" 
     "Mesh/Mesh.cpp" 
     "Mesh/MeshIndexed.h" 
