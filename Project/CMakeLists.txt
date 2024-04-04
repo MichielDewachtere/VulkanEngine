@@ -38,6 +38,7 @@ set(SOURCES
     # Logger
     "Util/Logger.cpp"
     "Util/Logger.h"
+    "Util/Concepts.h" 
 
     "Core/SwapChain.cpp"
     "Core/SwapChain.h" 
@@ -45,6 +46,10 @@ set(SOURCES
     "Core/CommandPool.cpp" 
     "Core/CommandBuffers/CommandBuffer.cpp" 
     "Core/CommandBuffers/CommandBuffer.h" 
+    "Core/DepthBuffer/DepthBuffer.cpp" 
+    "Core/DepthBuffer/DepthBuffer.h"  
+    "Core/DepthBuffer/DepthBufferManager.cpp" 
+    "Core/DepthBuffer/DepthBufferManager.h" 
 
     # Renderer
     "Graphics/Renderer.cpp" 
@@ -58,20 +63,23 @@ set(SOURCES
     "Graphics/ShaderManager.cpp" 
     "Graphics/ShaderManager.h" 
     
-    # Vertex Input
-    "Graphics/VertexInput.cpp" 
-    "Graphics/VertexInput.h" 
-    
     # Mesh
     "Mesh/BaseMesh.h"
     "Mesh/Mesh.h" 
     "Mesh/Mesh.cpp" 
     "Mesh/MeshIndexed.h" 
     "Mesh/MeshIndexed.cpp" 
-    
+        # Mesh Factories
+    "Mesh/PrimitiveFactory.h" 
+    "Mesh/PrimitiveFactory.cpp" 
+    "Mesh/MeshFactory.h"
+    "Mesh/MeshFactory.cpp"
+
     # Material
     "Material/Material.cpp"
     "Material/Material.h"
+     "Material/MaterialManager.h" 
+    "Material/MaterialManager.cpp"
         # Pipeline
     "Material/Pipelines/Pipeline.cpp" 
     "Material/Pipelines/Pipeline.h" 
@@ -87,12 +95,7 @@ set(SOURCES
     # Input
     "Misc/InputManager.cpp" 
     "Misc/InputManager.h"
-    
-    "Mesh/PrimitiveFactory.h" 
-    "Mesh/PrimitiveFactory.cpp" 
-    "Mesh/MeshFactory.h"
-    "Mesh/MeshFactory.cpp"
- "Core/DepthBuffer/DepthBuffer.cpp" "Core/DepthBuffer/DepthBuffer.h" "Core/DepthBuffer/DepthBufferManager.cpp" "Core/DepthBuffer/DepthBufferManager.h")
+)
 
 # Create the executable
 add_executable(${PROJECT_NAME} ${SOURCES} ${GLSL_SOURCE_FILES} )
