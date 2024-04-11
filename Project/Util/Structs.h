@@ -9,6 +9,9 @@
 #include <glm/glm.hpp>
 #include <SDL2/SDL.h>
 
+#define GLM_ENABLE_EXPERIMENTAL
+#include <glm/gtx/hash.hpp>
+
 #pragma region Engine
 struct VulkanContext
 {
@@ -53,18 +56,19 @@ struct PosCol2D
 	glm::vec2 pos;
 	glm::vec3 color;
 
-	static VkVertexInputBindingDescription GetBindingDescription()
+	static constexpr size_t binding_count = 1;
+	static std::array<VkVertexInputBindingDescription, binding_count> GetBindingDescription()
 	{
-		VkVertexInputBindingDescription bindingDescription{};
-		bindingDescription.binding = 0;
-		bindingDescription.stride = sizeof(PosCol2D);
-		bindingDescription.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
+		std::array<VkVertexInputBindingDescription, binding_count> bindingDescriptions{};
 
-		return bindingDescription;
+		bindingDescriptions[0].binding = 0;
+		bindingDescriptions[0].stride = sizeof(PosCol2D);
+		bindingDescriptions[0].inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
+
+		return bindingDescriptions;
 	}
 
 	static constexpr size_t attribute_count = 2; // Define the size of the attribute array
-
 	static std::array<VkVertexInputAttributeDescription, attribute_count> GetAttributeDescriptions()
 	{
 		std::array<VkVertexInputAttributeDescription, attribute_count> attributeDescriptions{};
@@ -89,18 +93,19 @@ struct alignas(16) PosColNorm
 	glm::vec3 color;
 	glm::vec3 normal;
 
-	static VkVertexInputBindingDescription GetBindingDescription()
+	static constexpr size_t binding_count = 1;
+	static std::array<VkVertexInputBindingDescription, binding_count> GetBindingDescription()
 	{
-		VkVertexInputBindingDescription bindingDescription{};
-		bindingDescription.binding = 0;
-		bindingDescription.stride = sizeof(PosColNorm);
-		bindingDescription.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
+		std::array<VkVertexInputBindingDescription, binding_count> bindingDescriptions{};
 
-		return bindingDescription;
+		bindingDescriptions[0].binding = 0;
+		bindingDescriptions[0].stride = sizeof(PosColNorm);
+		bindingDescriptions[0].inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
+
+		return bindingDescriptions;
 	}
 
-	static constexpr size_t attribute_count = 3; // Define the size of the attribute array
-
+	static constexpr size_t attribute_count = 3;
 	static std::array<VkVertexInputAttributeDescription, attribute_count> GetAttributeDescriptions()
 	{
 		std::array<VkVertexInputAttributeDescription, attribute_count> attributeDescriptions{};
@@ -123,6 +128,65 @@ struct alignas(16) PosColNorm
 		return attributeDescriptions;
 	}
 };
+
+struct /*alignas(16)*/ PosTexNorm
+{
+	glm::vec3 pos;
+	glm::vec2 texCoord;
+	glm::vec3 normal;
+
+	static constexpr size_t binding_count = 1;
+	static std::array<VkVertexInputBindingDescription, binding_count> GetBindingDescription()
+	{
+		std::array<VkVertexInputBindingDescription, binding_count> bindingDescriptions{};
+
+		bindingDescriptions[0].binding = 0;
+		bindingDescriptions[0].stride = sizeof(PosTexNorm);
+		bindingDescriptions[0].inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
+
+		return bindingDescriptions;
+	}
+
+	static constexpr size_t attribute_count = 3; // Define the size of the attribute array
+	static std::array<VkVertexInputAttributeDescription, attribute_count> GetAttributeDescriptions()
+	{
+		std::array<VkVertexInputAttributeDescription, attribute_count> attributeDescriptions{};
+
+		attributeDescriptions[0].binding = 0;
+		attributeDescriptions[0].location = 0;
+		attributeDescriptions[0].format = VK_FORMAT_R32G32B32_SFLOAT;
+		attributeDescriptions[0].offset = offsetof(PosTexNorm, pos);
+
+		attributeDescriptions[1].binding = 0;
+		attributeDescriptions[1].location = 1;
+		attributeDescriptions[1].format = VK_FORMAT_R32G32_SFLOAT;
+		attributeDescriptions[1].offset = offsetof(PosTexNorm, texCoord);
+
+		attributeDescriptions[2].binding = 0;
+		attributeDescriptions[2].location = 2;
+		attributeDescriptions[2].format = VK_FORMAT_R32G32B32_SFLOAT;
+		attributeDescriptions[2].offset = offsetof(PosTexNorm, normal);
+
+		return attributeDescriptions;
+	}
+
+	bool operator==(const PosTexNorm& other) const {
+		return pos == other.pos && normal == other.normal&& texCoord == other.texCoord;
+	}
+};
+
+namespace std
+{
+	template<> struct hash<PosTexNorm>
+	{
+		size_t operator()(PosTexNorm const& vertex) const noexcept
+		{
+			return ((hash<glm::vec3>()(vertex.pos) ^
+				(hash<glm::vec3>()(vertex.normal) << 1)) >> 1) ^
+				(hash<glm::vec2>()(vertex.texCoord) << 1);
+		}
+	};
+}
 
 //struct TrianglePosCol
 //{
