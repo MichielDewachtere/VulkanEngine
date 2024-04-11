@@ -1,6 +1,6 @@
 # Source files
-set(SHADER_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/shaders")
-set(SHADER_BINARY_DIR "${CMAKE_CURRENT_BINARY_DIR}/shaders")
+set(SHADER_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/Resources/Shaders")
+set(SHADER_BINARY_DIR "${CMAKE_CURRENT_BINARY_DIR}/Resources/Shaders")
 
 file(GLOB_RECURSE GLSL_SOURCE_FILES
     "${SHADER_SOURCE_DIR}/*.frag"
@@ -23,6 +23,9 @@ add_custom_target(
     DEPENDS ${SPIRV_BINARY_FILES}
 )
 
+# Copy textures to build directory
+file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/resources/textures DESTINATION ${CMAKE_CURRENT_BINARY_DIR}/resources)
+file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/resources/models DESTINATION ${CMAKE_CURRENT_BINARY_DIR}/resources)
 
 set(SOURCES
     "main.cpp"
@@ -85,8 +88,12 @@ set(SOURCES
     "Material/Pipelines/Pipeline.h" 
     "Material/Pipelines/PosCol2DPipeline.cpp" 
     "Material/Pipelines/PosCol2DPipeline.h" 
+    "Material/Pipelines/PosNormBase.cpp" 
+    "Material/Pipelines/PosNormBase.h"
     "Material/Pipelines/PosColNormPipeline.cpp" 
     "Material/Pipelines/PosColNormPipeline.h" 
+    "Material/Pipelines/PosTexNormPipeline.cpp" 
+    "Material/Pipelines/PosTexNormPipeline.h"  
     
     # Camera
     "Misc/Camera.cpp" 
@@ -95,6 +102,13 @@ set(SOURCES
     # Input
     "Misc/InputManager.cpp" 
     "Misc/InputManager.h"
+    
+    "Content/ContentManager.h" 
+    "Content/ContentManager.cpp" 
+    "Content/Texture2D.h" 
+    "Content/Texture2D.cpp"
+    "Content/Model.cpp" 
+    "Content/Model.h" 
 )
 
 # Create the executable
@@ -102,5 +116,4 @@ add_executable(${PROJECT_NAME} ${SOURCES} ${GLSL_SOURCE_FILES} )
 add_dependencies(${PROJECT_NAME} Shaders)
 # Link libraries
 target_include_directories(${PROJECT_NAME} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
-#target_link_libraries(${PROJECT_NAME} PRIVATE ${Vulkan_LIBRARIES} glfw)
-target_link_libraries(${PROJECT_NAME} PRIVATE ${Vulkan_LIBRARIES} SDL2::SDL2 SDL2::SDL2main)
+target_link_libraries(${PROJECT_NAME} PRIVATE ${Vulkan_LIBRARIES} SDL2::SDL2 SDL2::SDL2main SDL2_image tinyobjloader)
