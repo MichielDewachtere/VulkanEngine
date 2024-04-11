@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <iostream>
+#include <ranges>
 
 void ShaderManager::Init(std::string shaderSourcePath)
 {
@@ -31,17 +32,10 @@ VkPipelineShaderStageCreateInfo ShaderManager::CreateShaderInfo(const VkDevice& 
 
 void ShaderManager::DestroyShaderModules(VkDevice device)
 {
-	// TODO: destroy all shaders
-
-	for (auto [name, shader] : m_ShaderPtrs)
+	for (const auto& shader : m_ShaderPtrs | std::views::values)
 	{
 		vkDestroyShaderModule(device, shader.module, nullptr);
 	}
-
-	//std::for_each(m_ShaderPtrs, [&](auto m)
-	//	{
-	//		vkDestroyShaderModule(device, m.second.module, nullptr);
-	//	});
 
 	m_ShaderPtrs.clear();
 }

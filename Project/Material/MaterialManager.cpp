@@ -19,7 +19,6 @@ std::vector<BaseMaterial*> MaterialManager::GetMaterials() const
 
 void MaterialManager::RemoveMaterial(const GameContext& context, uint8_t id)
 {
-    // TODO: Clean up
     m_pMaterials.at(id)->CleanUp(context);
     m_pMaterials.erase(id);
 }
