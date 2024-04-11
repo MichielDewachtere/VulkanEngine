@@ -37,7 +37,9 @@ private:
 	Mesh<PosCol2D>* m_pTriangle{ nullptr };
 	MeshIndexed<PosCol2D>* m_pRectangle{ nullptr };
 
-	MeshIndexed<PosColNorm>* m_pCube1{ nullptr }, * m_pCube2{ nullptr };
+	MeshIndexed<PosColNorm>* m_pCube1{ nullptr };
+	MeshIndexed<PosTexNorm>* m_pCube2{ nullptr };
+	MeshIndexed<PosTexNorm>* m_pModel{ nullptr };
 
 	const std::vector<const char*> m_ValidationLayers =
 	{
@@ -49,7 +51,9 @@ private:
 		VK_KHR_SWAPCHAIN_EXTENSION_NAME
 	};
 
+	void InitSDL();
 	void InitWindow();
+	void InitSDLImage();
 	void InitVulkan();
 	void InitRenderer();
 	//void InitImGui();

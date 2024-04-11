@@ -3,7 +3,10 @@
 #include <set>
 
 #include <SDL2/SDL_vulkan.h>
+#include <SDL_image.h>
 
+#include "Content/ContentManager.h"
+#include "Content/Model.h"
 #include "Core/CommandPool.h"
 #include "Core/DepthBuffer/DepthBufferManager.h"
 #include "Mesh/Mesh.h"
@@ -11,6 +14,7 @@
 #include "Graphics/Renderer.h"
 #include "Material/Pipelines/PosCol2DPipeline.h"
 #include "Material/Pipelines/PosColNormPipeline.h"
+#include "Material/Pipelines/PosTexNormPipeline.h"
 #include "Mesh/MeshIndexed.h"
 #include "Util/GameTime.h"
 #include "Material/Material.h"
@@ -71,6 +75,12 @@ QueueFamilyIndices Engine::FindQueueFamilies(const VkPhysicalDevice& device, con
 	return indices;
 }
 
+void Engine::InitSDL()
+{
+	InitWindow();
+	InitSDLImage();
+}
+
 void Engine::InitWindow()
 {
 	if (SDL_Init(SDL_INIT_VIDEO) != 0)
@@ -97,6 +107,16 @@ void Engine::InitWindow()
 	m_GameContext.pWindow = pWindow;
 }
 
+void Engine::InitSDLImage()
+{
+	// Initialize SDL_image
+	const int imgFlags = IMG_INIT_PNG; // You can specify other image formats here
+	if (!(IMG_Init(imgFlags) & imgFlags)) 
+	{
+		throw std::runtime_error(std::string("SDL_image could not initialize! SDL_image Error: ") + IMG_GetError());
+	}
+}
+
 void Engine::InitVulkan()
 {
 	// Create Instance
@@ -120,21 +140,23 @@ void Engine::InitVulkan()
 
 void Engine::InitRenderer()
 {
+	auto& shaderManager = ShaderManager::GetInstance();
 	auto& materialManager = MaterialManager::GetInstance();
 	auto& renderer = Renderer::GetInstance();
+
+	shaderManager.Init("resources/shaders");
 	renderer.Init(m_GameContext);
 
-	//m_pPosCol2D = materialManager.AddMaterial<PosCol2DPipeline, PosCol2D>(m_GameContext).first;
-	//m_pPosColNorm = materialManager.AddMaterial<PosColNormPipeline, PosColNorm>(m_GameContext).first;
 	materialManager.AddMaterial<PosCol2DPipeline, PosCol2D>(m_GameContext);
 	materialManager.AddMaterial<PosColNormPipeline, PosColNorm>(m_GameContext);
+	materialManager.AddMaterial<PosTexNormPipeline, PosTexNorm>(m_GameContext);
 
-	ShaderManager::GetInstance().DestroyShaderModules(m_GameContext.vulkanContext.device);
+	shaderManager.DestroyShaderModules(m_GameContext.vulkanContext.device);
 }
 
 void Engine::InitGame()
 {
-	auto& materialManager = MaterialManager::GetInstance();
+	const auto& materialManager = MaterialManager::GetInstance();
 
 	{
 		const std::vector triangleVertices{
@@ -143,46 +165,78 @@ void Engine::InitGame()
 			PosCol2D{ glm::vec2{0.5f + -0.25f, 0.25f},glm::vec3{0.0f, 0.0f, 1.0f} },
 		};
 
-		m_pTriangle = new Mesh<PosCol2D>(3, true);
+		MeshInfo info;
+		info.vertexCapacity = static_cast<uint32_t>(triangleVertices.size());
+
+		m_pTriangle = new Mesh<PosCol2D>(info);
 		materialManager.GetMaterial<PosCol2DPipeline, PosCol2D>()->BindMesh(m_GameContext, m_pTriangle);
 		m_pTriangle->AddVertices(triangleVertices);
 		m_pTriangle->Init(m_GameContext);
 	}
 	{
-		const std::vector rectVertices ={
+		const std::vector vertices ={
 			PosCol2D{ glm::vec2{-0.5 + -0.25, -0.25},	glm::vec3{1,0,0} },
 			PosCol2D{ glm::vec2{-0.5 + 0.25,  -0.25},	glm::vec3{0,1,0} },
 			PosCol2D{ glm::vec2{-0.5 + 0.25,   0.25},	glm::vec3{0,0,1} },
 			PosCol2D{ glm::vec2{-0.5 + -0.25,  0.25},	glm::vec3{1,1,1} },
 		};
-		const std::vector<uint16_t> indices =
+		const std::vector<uint32_t> indices =
 		{
 			0, 1, 2, 2, 3, 0
 		};
 
-		m_pRectangle = new MeshIndexed<PosCol2D>(4, 6, true);
+		MeshInfo info;
+		info.indexCapacity = static_cast<uint32_t>(indices.size());
+		info.vertexCapacity = static_cast<uint32_t>(vertices.size());
+
+		m_pRectangle = new MeshIndexed<PosCol2D>(info);
 		materialManager.GetMaterial<PosCol2DPipeline, PosCol2D>()->BindMesh(m_GameContext, m_pRectangle);
-		m_pRectangle->AddVertices(rectVertices);
+		m_pRectangle->AddVertices(vertices);
 		m_pRectangle->AddIndices(indices);
 		m_pRectangle->Init(m_GameContext);
 	}
 	{
 		auto [indices, vertices] = MeshFactory::CreateCube({ 0,0,0 }, 1);
-		m_pCube1 = new MeshIndexed<PosColNorm>(static_cast<uint32_t>(vertices.size()),
-		                                      static_cast<uint32_t>(indices.size()), false);
+		MeshInfo info;
+		info.indexCapacity = static_cast<uint32_t>(indices.size());
+		info.vertexCapacity = static_cast<uint32_t>(vertices.size());
+		info.usesUbo = true;
+
+		m_pCube1 = new MeshIndexed<PosColNorm>(info);
 		materialManager.GetMaterial<PosColNormPipeline, PosColNorm>()->BindMesh(m_GameContext, m_pCube1);
 		m_pCube1->AddVertices(vertices);
 		m_pCube1->AddIndices(indices);
 		m_pCube1->Init(m_GameContext);
 	}
 	{
-		auto [indices, vertices] = MeshFactory::CreateCube({ 2,0,0 }, 1);
-		m_pCube2 = new MeshIndexed<PosColNorm>(static_cast<uint32_t>(vertices.size()),
-		                                      static_cast<uint32_t>(indices.size()), false);
-		materialManager.GetMaterial<PosColNormPipeline, PosColNorm>()->BindMesh(m_GameContext, m_pCube2);
+		auto [indices, vertices] = MeshFactory::CreateCubeMap({ 2,0,0 }, 1);
+		MeshInfo info;
+		info.indexCapacity = static_cast<uint32_t>(indices.size());
+		info.vertexCapacity = static_cast<uint32_t>(vertices.size());
+		info.usesUbo = true;
+		info.texture = ContentManager::GetInstance().LoadTexture(m_GameContext, "Resources/textures/grass_side.png");
+
+		m_pCube2 = new MeshIndexed<PosTexNorm>(info);
+		materialManager.GetMaterial<PosTexNormPipeline, PosTexNorm>()->BindMesh(m_GameContext, m_pCube2);
 		m_pCube2->AddVertices(vertices);
 		m_pCube2->AddIndices(indices);
 		m_pCube2->Init(m_GameContext);
+	}
+	{
+		const auto model = ContentManager::GetInstance().LoadModel("Resources/Models/viking_room.obj", { 4,0,0 });
+		const auto indices = model->GetIndices();
+		const auto vertices = model->GetVertices();
+		MeshInfo info;
+		info.indexCapacity = static_cast<uint32_t>(indices.size());
+		info.vertexCapacity = static_cast<uint32_t>(vertices.size());
+		info.usesUbo = true;
+		info.texture = ContentManager::GetInstance().LoadTexture(m_GameContext, "Resources/textures/viking_room.png");
+
+		m_pModel = new MeshIndexed<PosTexNorm>(info);
+		materialManager.GetMaterial<PosTexNormPipeline, PosTexNorm>()->BindMesh(m_GameContext, m_pModel);
+		m_pModel->AddVertices(vertices);
+		m_pModel->AddIndices(indices);
+		m_pModel->Init(m_GameContext);
 	}
 }
 
@@ -203,7 +257,13 @@ void Engine::MainLoop()
 	bool printFps = true;
 
 	const std::string text{
-	"-=- INFO -=-\nPress I to print info\nPress C to clear the console\nPress F1 to toggle fps\nPress F3 to toggle the 2d pipeline on/off\nPress F4 to toggle the 3d pipeline on/off\n-=- END INFO -=-\n"
+	"-=- INFO -=-\nPress I to print info\n"
+		"Press C to clear the console\n"
+		"Press F1 to toggle fps\n"
+		"Press F3 to toggle the 2d pipeline on / off\n"
+		"Press F4 to toggle the 3d colored pipeline on / off\n"
+		"Press F5 to toggle the 3d textured pipeline on / off\n"
+		"-=- END INFO -=-\n"
 	};
 
 	std::cout << text;
@@ -253,7 +313,14 @@ void Engine::MainLoop()
 			const auto material = MaterialManager::GetInstance().GetMaterial<PosColNormPipeline, PosColNorm>();
 			material->SetIsActive(!material->IsActive());
 			auto s = material->IsActive() ? "\033[1;32mON\033[0m" : "\033[1;31mOFF\033[0m";
-			std::cout << "3D pipeline turned " << s << "\n";
+			std::cout << "3D colored pipeline turned " << s << "\n";
+		}
+		if (InputManager::GetInstance().IsKeyboardKey(InputState::pressed, SDL_SCANCODE_F5))
+		{
+			const auto material = MaterialManager::GetInstance().GetMaterial<PosTexNormPipeline, PosTexNorm>();
+			material->SetIsActive(!material->IsActive());
+			auto s = material->IsActive() ? "\033[1;32mON\033[0m" : "\033[1;31mOFF\033[0m";
+			std::cout << "3D textured pipeline turned " << s << "\n";
 		}
 #pragma endregion DEBUG STUFF
 
@@ -273,6 +340,7 @@ void Engine::CleanUp()
 	Renderer::GetInstance().CleanUp(m_GameContext);
 	DepthBufferManager::GetInstance().CleanUp(m_GameContext);
 	MaterialManager::GetInstance().RemoveMaterials(m_GameContext);
+	ContentManager::GetInstance().CleanUp(m_GameContext);
 
 	vkDestroyRenderPass(m_GameContext.vulkanContext.device, m_GameContext.vulkanContext.renderPass, nullptr);
 
@@ -280,6 +348,7 @@ void Engine::CleanUp()
 	m_pRectangle->CleanUp(m_GameContext);
 	m_pCube1->CleanUp(m_GameContext);
 	m_pCube2->CleanUp(m_GameContext);
+	m_pModel->CleanUp(m_GameContext);
 
 	CommandPool::GetInstance().CleanUp(m_GameContext);
 
@@ -462,7 +531,11 @@ bool Engine::IsDeviceSuitable(const VkPhysicalDevice& device)
 {
 	QueueFamilyIndices indices = FindQueueFamilies(device, m_GameContext.vulkanContext.surface);
 	const bool extensionsSupported = CheckDeviceExtensionSupport(device);
-	return indices.isComplete() && extensionsSupported;
+
+	VkPhysicalDeviceFeatures supportedFeatures;
+	vkGetPhysicalDeviceFeatures(device, &supportedFeatures);
+
+	return indices.isComplete() && extensionsSupported /*&& swapChainAdequate */&& supportedFeatures.samplerAnisotropy;
 }
 
 bool Engine::CheckDeviceExtensionSupport(VkPhysicalDevice device)
@@ -505,6 +578,7 @@ void Engine::CreateLogicalDevice()
 	queueCreateInfo.queueCount = 1;
 
 	VkPhysicalDeviceFeatures deviceFeatures{};
+	deviceFeatures.samplerAnisotropy = VK_TRUE;
 
 	VkDeviceCreateInfo createInfo{};
 	createInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
@@ -531,7 +605,4 @@ void Engine::CreateLogicalDevice()
 	{
 		throw std::runtime_error("failed to create logical device!");
 	}
-
-	//vkGetDeviceQueue(m_GameContext.vulkanContext.device, indices.graphicsFamily.value(), 0, &m_GraphicsQueue);
-	//vkGetDeviceQueue(m_GameContext.vulkanContext.device, indices.presentFamily.value(), 0, &m_PresentQueue);
 }
