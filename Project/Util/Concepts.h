@@ -10,7 +10,7 @@ template<typename T>
 concept vertex_type =
     requires(T) {
 		// The type must have a static member function GetBindingDescription()
-        { T::GetBindingDescription() } -> std::same_as<VkVertexInputBindingDescription>;
+        { T::GetBindingDescription() } -> std::same_as<std::array<VkVertexInputBindingDescription, T::binding_count>>;
         // The type must have a static member function GetAttributeDescriptions()
         { T::GetAttributeDescriptions() } -> std::same_as<std::array<VkVertexInputAttributeDescription, T::attribute_count>>;
 };
