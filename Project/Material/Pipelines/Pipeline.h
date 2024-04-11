@@ -17,6 +17,7 @@ public:
 	Pipeline& operator=(Pipeline&&) = delete;
 
 	virtual void CreatePipeline(const VulkanContext& device) = 0;
+
 	VkPipeline GetPipeline() const { return m_Pipeline; }
 	VkPipelineLayout GetPipelineLayout() const { return m_PipelineLayout; }
 	VkDescriptorSetLayout GetDescriptorSetLayout() const { return m_DescriptorSetLayout; }
