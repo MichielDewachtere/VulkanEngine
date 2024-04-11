@@ -5,6 +5,7 @@
 #include "Engine.h"
 #include "Core/CommandPool.h"
 #include "Util/VulkanUtil.h"
+#include "Graphics/Renderer.h"
 
 void CommandBuffer::CreateCommandBuffer(const VulkanContext& context)
 {
@@ -53,4 +54,39 @@ void CommandBuffer::StopRecording(VkCommandBuffer buffer)
 	{
 		throw std::runtime_error("failed to record command buffer!");
 	}
+}
+
+VkCommandBuffer CommandBuffer::StartSingleTimeCommands(const GameContext& context)
+{
+	VkCommandBufferAllocateInfo allocInfo{};
+	allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+	allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+	allocInfo.commandPool = CommandPool::GetInstance().GetCommandPool();
+	allocInfo.commandBufferCount = 1;
+
+	VkCommandBuffer commandBuffer;
+	vkAllocateCommandBuffers(context.vulkanContext.device, &allocInfo, &commandBuffer);
+
+	VkCommandBufferBeginInfo beginInfo{};
+	beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+	beginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+
+	vkBeginCommandBuffer(commandBuffer, &beginInfo);
+
+	return commandBuffer;
+}
+
+void CommandBuffer::StopSingleTimeCommands(const GameContext& context, VkCommandBuffer commandBuffer)
+{
+	vkEndCommandBuffer(commandBuffer);
+
+	VkSubmitInfo submitInfo{};
+	submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+	submitInfo.commandBufferCount = 1;
+	submitInfo.pCommandBuffers = &commandBuffer;
+
+	vkQueueSubmit(Renderer::GetInstance().GetGraphicsQueue(), 1, &submitInfo, VK_NULL_HANDLE);
+	vkQueueWaitIdle(Renderer::GetInstance().GetGraphicsQueue());
+
+	vkFreeCommandBuffers(context.vulkanContext.device, CommandPool::GetInstance().GetCommandPool(), 1, &commandBuffer);
 }

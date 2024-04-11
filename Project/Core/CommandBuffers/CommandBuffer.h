@@ -24,6 +24,9 @@ public:
 	void StopRecording(uint32_t currentFrame) const;
 	static void StopRecording(VkCommandBuffer buffer);
 
+	[[nodiscard]] static VkCommandBuffer StartSingleTimeCommands(const GameContext& context);
+	static void StopSingleTimeCommands(const GameContext& context, VkCommandBuffer commandBuffer);
+
 private:
 	std::vector<VkCommandBuffer> m_CommandBuffers{};
 };
