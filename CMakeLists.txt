@@ -9,22 +9,26 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 include(FetchContent)
 
-# FetchContent_Declare(
-#   glfw
-#   GIT_REPOSITORY https://github.com/glfw/glfw.git
-#   GIT_TAG        3.3.8 # Specify the version you need
-# )
-
 # Use FetchContent to download SDL2
 FetchContent_Declare(
-  SDL2
-#  URL https://www.libsdl.org/release/SDL2-2.30.1.zip
-
-  GIT_REPOSITORY https://github.com/libsdl-org/SDL.git
-  GIT_TAG        release-2.30.1 # You can change this to the specific version you need
+    SDL2
+    GIT_REPOSITORY https://github.com/libsdl-org/SDL.git
+    GIT_TAG        release-2.30.1 # You can change this to the specific version you need
 )
 
-FetchContent_MakeAvailable(SDL2)
+FetchContent_Declare(
+    SDL2_image
+    GIT_REPOSITORY https://github.com/libsdl-org/SDL_image.git
+    GIT_TAG        release-2.8.2
+)
+# Fetch tinyobjloader from GitHub
+FetchContent_Declare(
+    tinyobjloader
+    GIT_REPOSITORY https://github.com/tinyobjloader/tinyobjloader.git
+    GIT_TAG        v1.0.6
+)
+
+FetchContent_MakeAvailable(SDL2 SDL2_image tinyobjloader)
 
 # Find the required packages
 find_package(Vulkan REQUIRED)
