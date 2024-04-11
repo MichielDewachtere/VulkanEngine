@@ -106,6 +106,57 @@ VkPipelineInputAssemblyStateCreateInfo CreateInputAssemblyStateInfo(VkPrimitiveT
     return inputAssembly;
 }
 
+void CreateBuffer(const GameContext& context, VkDeviceSize size, VkBufferUsageFlags usage,
+	VkMemoryPropertyFlags properties, VkBuffer& buffer, VkDeviceMemory& bufferMemory)
+{
+    // Create buffer
+    VkBufferCreateInfo bufferInfo{};
+    bufferInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
+    bufferInfo.size = size;
+    bufferInfo.usage = usage;
+    bufferInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+
+    if (vkCreateBuffer(context.vulkanContext.device, &bufferInfo, nullptr, &buffer) != VK_SUCCESS) {
+        throw std::runtime_error("failed to create buffer!");
+    }
+
+    VkMemoryRequirements memRequirements;
+    vkGetBufferMemoryRequirements(context.vulkanContext.device, buffer, &memRequirements);
+
+    VkMemoryAllocateInfo allocInfo{};
+    allocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+    allocInfo.allocationSize = memRequirements.size;
+    allocInfo.memoryTypeIndex = FindMemoryType(context, memRequirements.memoryTypeBits, properties);
+
+    // TODO: This could be improved -> see Conclusion @ https://vulkan-tutorial.com/Vertex_buffers/Staging_buffer
+    if (vkAllocateMemory(context.vulkanContext.device, &allocInfo, nullptr, &bufferMemory) != VK_SUCCESS) {
+        throw std::runtime_error("failed to allocate buffer memory!");
+    }
+
+    vkBindBufferMemory(context.vulkanContext.device, buffer, bufferMemory, 0);
+}
+
+VkImageView CreateImageView(const GameContext& context, VkImage image, VkFormat format)
+{
+    VkImageViewCreateInfo viewInfo{};
+    viewInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+    viewInfo.image = image;
+    viewInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
+    viewInfo.format = format;
+    viewInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+    viewInfo.subresourceRange.baseMipLevel = 0;
+    viewInfo.subresourceRange.levelCount = 1;
+    viewInfo.subresourceRange.baseArrayLayer = 0;
+    viewInfo.subresourceRange.layerCount = 1;
+
+    VkImageView imageView;
+    if (vkCreateImageView(context.vulkanContext.device, &viewInfo, nullptr, &imageView) != VK_SUCCESS)
+        throw std::runtime_error("failed to create texture image view!");
+
+    return imageView;
+}
+
+
 std::vector<char> readFile(const std::string& filename) {
 	std::ifstream file(filename, std::ios::ate | std::ios::binary);
 

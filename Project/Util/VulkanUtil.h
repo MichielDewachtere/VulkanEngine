@@ -44,6 +44,11 @@ VkPipelineVertexInputStateCreateInfo GetVertexInputInfo()
 }
 VkPipelineInputAssemblyStateCreateInfo CreateInputAssemblyStateInfo(VkPrimitiveTopology topology);
 
+void CreateBuffer(const GameContext& context, VkDeviceSize size, VkBufferUsageFlags usage,
+	VkMemoryPropertyFlags properties, VkBuffer& buffer, VkDeviceMemory& bufferMemory);
+
+VkImageView CreateImageView(const GameContext& context, VkImage image, VkFormat format);
+
 std::vector<char> readFile(const std::string& filename);
 
 #endif // VULKANUTIL_H
