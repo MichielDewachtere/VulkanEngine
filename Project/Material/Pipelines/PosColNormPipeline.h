@@ -1,9 +1,9 @@
 #ifndef POSCOLNORMPIPELINE_H
 #define POSCOLNORMPIPELINE_H
 
-#include "Pipeline.h"
+#include "PosNormBase.h"
 
-class PosColNormPipeline final : public Pipeline
+class PosColNormPipeline : public PosNormBase<PosColNorm>
 {
 public:
 	PosColNormPipeline() = default;
@@ -11,7 +11,7 @@ public:
 
 	virtual void CleanUp(VkDevice device) override;
 
-	virtual void CreatePipeline(const VulkanContext& device) override;
+	virtual void CreatePipeline(const VulkanContext& vulkan) override;
 private:
 	void CreateDescriptorSetLayout(const VkDevice& device);
 };
