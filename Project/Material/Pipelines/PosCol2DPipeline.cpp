@@ -12,9 +12,8 @@ void PosCol2DPipeline::CreatePipeline(const VulkanContext& vulkan)
 {
 	if (m_IsCreated)
 		return;
-
+	
 	// Create Shaders
-	ShaderManager::GetInstance().Init("shaders");
 	auto vertShaderStageInfo = ShaderManager::GetInstance().CreateShaderInfo(vulkan.device, ShaderType::vertex, "poscol2d.vert.spv");
 	auto fragShaderStageInfo = ShaderManager::GetInstance().CreateShaderInfo(vulkan.device, ShaderType::fragment, "poscol2d.frag.spv");
 
@@ -23,12 +22,11 @@ void PosCol2DPipeline::CreatePipeline(const VulkanContext& vulkan)
 	const auto assemblyStateInfo = CreateInputAssemblyStateInfo(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST);
 
 	VkPipelineVertexInputStateCreateInfo vertexInputInfo{};
-	const VkVertexInputBindingDescription bindingDescription = PosCol2D::GetBindingDescription();
 	vertexInputInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
 	vertexInputInfo.pVertexAttributeDescriptions = PosCol2D::GetAttributeDescriptions().data();
 	vertexInputInfo.vertexAttributeDescriptionCount = static_cast<uint32_t>(PosCol2D::GetAttributeDescriptions().size());
-	vertexInputInfo.pVertexBindingDescriptions = &bindingDescription;
-	vertexInputInfo.vertexBindingDescriptionCount = 1;
+	vertexInputInfo.pVertexBindingDescriptions = PosCol2D::GetBindingDescription().data();
+	vertexInputInfo.vertexBindingDescriptionCount = static_cast<uint32_t>(PosCol2D::GetBindingDescription().size());
 
 	VkPipelineViewportStateCreateInfo viewportState{};
 	viewportState.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
