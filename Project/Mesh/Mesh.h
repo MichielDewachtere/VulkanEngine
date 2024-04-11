@@ -9,22 +9,26 @@
 #include "Misc/Camera.h"
 
 #include "Core/CommandPool.h"
-#include "Graphics/Renderer.h"
+
+#include "Content/ContentManager.h"
 
 #include "Util/Concepts.h"
 #include "Util/Structs.h"
 #include "Util/GameTime.h"
 #include "Util/VulkanUtil.h"
 
+struct MeshInfo
+{
+	uint32_t vertexCapacity = 0, indexCapacity = 0;
+	Texture2D* texture = nullptr;
+	bool usesUbo = false;
+};
+
 template <vertex_type V>
 class Mesh
 {
 public:
-	explicit Mesh(uint32_t vertexCapacity, bool is2d)
-		: m_VertexCapacity(vertexCapacity)
-		, m_Is2D(is2d)
-	{
-	}
+	explicit Mesh(MeshInfo info) : m_Info(info) {}
 
 	virtual ~Mesh() = default;
 
@@ -51,13 +55,13 @@ public:
 		vkDestroyBuffer(context.vulkanContext.device, m_StagingBuffer, nullptr);
 		vkFreeMemory(context.vulkanContext.device, m_StagingBufferMemory, nullptr);
 
-		if (m_Is2D == false)
+		if (m_Info.usesUbo)
 			vkDestroyDescriptorPool(context.vulkanContext.device, m_DescriptorPool, nullptr);
 	}
 
 	void CreateDescriptor(const GameContext& context, VkDescriptorSetLayout layout)
 	{
-		if (m_Is2D)
+		if (m_Info.usesUbo == false)
 			return;
 
 		CreateUniformBuffers(context);
@@ -67,7 +71,7 @@ public:
 
 	void Update(uint32_t currentFrame, VkCommandBuffer buffer, VkPipelineLayout layout)
 	{
-		if (m_Is2D)
+		if (m_Info.usesUbo == false)
 			return;
 
 		UniformBufferObject ubo{};
@@ -108,8 +112,7 @@ public:
 	}
 
 protected:
-	uint32_t m_VertexCapacity;
-	bool m_Is2D;
+	MeshInfo m_Info;
 	std::vector<V> m_Vertices{};
 
 	// Vertex buffer
@@ -121,39 +124,11 @@ protected:
 	std::vector<VkDeviceMemory> m_UniformBuffersMemory{ nullptr };
 	std::vector<void*> m_UniformBuffersMapped{ nullptr };
 
-	// TODO: Make separate like command pool? Maybe at the pipeline??
+	// TODO: Ask => one per pipeline / one per mesh??
+	// They use same UBO/Samplers but different data
 	VkDescriptorPool m_DescriptorPool{};
 	std::vector<VkDescriptorSet> m_DescriptorSets{};
 
-	static void CreateBuffer(const GameContext& context, VkDeviceSize size, VkBufferUsageFlags usage,
-	                         VkMemoryPropertyFlags properties, VkBuffer& buffer, VkDeviceMemory& bufferMemory)
-	{
-		// Create buffer
-		VkBufferCreateInfo bufferInfo{};
-		bufferInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
-		bufferInfo.size = size;
-		bufferInfo.usage = usage;
-		bufferInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
-
-		if (vkCreateBuffer(context.vulkanContext.device, &bufferInfo, nullptr, &buffer) != VK_SUCCESS) {
-			throw std::runtime_error("failed to create buffer!");
-		}
-
-		VkMemoryRequirements memRequirements;
-		vkGetBufferMemoryRequirements(context.vulkanContext.device, buffer, &memRequirements);
-
-		VkMemoryAllocateInfo allocInfo{};
-		allocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
-		allocInfo.allocationSize = memRequirements.size;
-		allocInfo.memoryTypeIndex = FindMemoryType(context, memRequirements.memoryTypeBits, properties);
-
-		// TODO: This could be improved -> see Conclusion @ https://vulkan-tutorial.com/Vertex_buffers/Staging_buffer
-		if (vkAllocateMemory(context.vulkanContext.device, &allocInfo, nullptr, &bufferMemory) != VK_SUCCESS) {
-			throw std::runtime_error("failed to allocate buffer memory!");
-		}
-
-		vkBindBufferMemory(context.vulkanContext.device, buffer, bufferMemory, 0);
-	}
 	void CreateVertexBuffer(const GameContext& context)
 	{
 		const VkDeviceSize bufferSize = sizeof(V) * m_Vertices.size();
@@ -190,14 +165,19 @@ protected:
 
 	void CreateDescriptorPool(const GameContext& context)
 	{
-		VkDescriptorPoolSize poolSize{};
-		poolSize.type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-		poolSize.descriptorCount = static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT);
+		std::vector< VkDescriptorPoolSize> poolSizes{};
+		if (m_Info.usesUbo)
+			poolSizes.push_back({ VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT) });
+		if (m_Info.texture)
+			poolSizes.push_back({ VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT) });
+
+		if (poolSizes.empty())
+			return;
 
 		VkDescriptorPoolCreateInfo poolInfo{};
 		poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
-		poolInfo.poolSizeCount = 1;
-		poolInfo.pPoolSizes = &poolSize;
+		poolInfo.poolSizeCount = static_cast<uint32_t>(poolSizes.size());
+		poolInfo.pPoolSizes = poolSizes.data();
 		poolInfo.maxSets = static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT);
 
 		if (vkCreateDescriptorPool(context.vulkanContext.device, &poolInfo, nullptr, &m_DescriptorPool) != VK_SUCCESS) {
@@ -221,20 +201,58 @@ protected:
 		for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
 		{
 			VkDescriptorBufferInfo bufferInfo{};
-			bufferInfo.buffer = m_UniformBuffers[i];
-			bufferInfo.offset = 0;
-			bufferInfo.range = sizeof(UniformBufferObject);
+			if (m_Info.usesUbo)
+			{
+				bufferInfo.buffer = m_UniformBuffers[i];
+				bufferInfo.offset = 0;
+				bufferInfo.range = sizeof(UniformBufferObject);
+			}
 
-			VkWriteDescriptorSet descriptorWrite{};
-			descriptorWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-			descriptorWrite.dstSet = m_DescriptorSets[i];
-			descriptorWrite.dstBinding = 0;
-			descriptorWrite.dstArrayElement = 0;
-			descriptorWrite.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-			descriptorWrite.descriptorCount = 1;
-			descriptorWrite.pBufferInfo = &bufferInfo;
+			VkDescriptorImageInfo imageInfo{};
+			if (m_Info.texture)
+			{
+				//const auto texture = ContentManager::GetInstance().LoadTexture(context, "Resources/Textures/grass_side.png");
+				const auto texture = ContentManager::GetInstance().LoadTexture(context, "Resources/Textures/viking_room.png");
 
-			vkUpdateDescriptorSets(context.vulkanContext.device, 1, &descriptorWrite, 0, nullptr);
+				imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+				imageInfo.imageView = m_Info.texture->GetTextureImageView();
+				imageInfo.sampler = m_Info.texture->GetTextureSampler();
+			}
+
+			std::vector<VkWriteDescriptorSet> descriptorWrites{};
+			if (m_Info.usesUbo)
+			{
+				VkWriteDescriptorSet descriptorWrite{};
+				descriptorWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+				descriptorWrite.dstSet = m_DescriptorSets[i];
+				descriptorWrite.dstBinding = 0;
+				descriptorWrite.dstArrayElement = 0;
+				descriptorWrite.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+				descriptorWrite.descriptorCount = 1;
+				descriptorWrite.pBufferInfo = &bufferInfo;
+				descriptorWrite.pImageInfo = &imageInfo;
+
+				descriptorWrites.push_back(descriptorWrite);
+			}
+			if (m_Info.texture)
+			{
+				VkWriteDescriptorSet descriptorWrite{};
+				descriptorWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+				descriptorWrite.dstSet = m_DescriptorSets[i];
+				descriptorWrite.dstBinding = 1;
+				descriptorWrite.dstArrayElement = 0;
+				descriptorWrite.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+				descriptorWrite.descriptorCount = 1;
+				descriptorWrite.pImageInfo = &imageInfo;
+
+				descriptorWrites.push_back(descriptorWrite);
+			}
+
+			if (descriptorWrites.empty())
+				return;
+
+			vkUpdateDescriptorSets(context.vulkanContext.device, static_cast<uint32_t>(descriptorWrites.size()),
+			                       descriptorWrites.data(), 0, nullptr);
 		}
 	}
 
@@ -246,42 +264,17 @@ protected:
 		vkUnmapMemory(context.vulkanContext.device, bufferMemory);
 	}
 
-	void CopyBuffer(const GameContext& context, VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size)
+	static void CopyBuffer(const GameContext& context, VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size)
 	{
-		VkCommandBufferAllocateInfo allocInfo{};
-		allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-		allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-		// TODO: Could make seperate command pool for short lived buffers
-		allocInfo.commandPool = CommandPool::GetInstance().GetCommandPool();
-		allocInfo.commandBufferCount = 1;
+		const auto commandBuffer = CommandBuffer::StartSingleTimeCommands(context);
 
-		VkCommandBuffer commandBuffer;
-		vkAllocateCommandBuffers(context.vulkanContext.device, &allocInfo, &commandBuffer);
-
-		VkCommandBufferBeginInfo beginInfo{};
-		beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-		beginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
-
-		vkBeginCommandBuffer(commandBuffer, &beginInfo);
-
-		VkBufferCopy copyRegion{};
+		VkBufferCopy copyRegion;
 		copyRegion.srcOffset = 0; // Optional
 		copyRegion.dstOffset = 0; // Optional
 		copyRegion.size = size;
 		vkCmdCopyBuffer(commandBuffer, srcBuffer, dstBuffer, 1, &copyRegion);
 
-		vkEndCommandBuffer(commandBuffer);
-
-		VkSubmitInfo submitInfo{};
-		submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-		submitInfo.commandBufferCount = 1;
-		submitInfo.pCommandBuffers = &commandBuffer;
-
-		const VkQueue graphicsQueue = Renderer::GetInstance().GetGraphicsQueue();
-		vkQueueSubmit(graphicsQueue, 1, &submitInfo, VK_NULL_HANDLE);
-		vkQueueWaitIdle(graphicsQueue);
-
-		vkFreeCommandBuffers(context.vulkanContext.device, CommandPool::GetInstance().GetCommandPool(), 1, &commandBuffer);
+		CommandBuffer::StopSingleTimeCommands(context, commandBuffer);
 	}
 
 	void PrintMat4(const glm::mat4& matrix) const

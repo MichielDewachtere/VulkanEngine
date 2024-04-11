@@ -11,12 +11,7 @@ template <vertex_type V>
 class MeshIndexed final : public Mesh<V>
 {
 public:
-	explicit MeshIndexed(uint32_t vertexCapacity, uint32_t indexCapacity, bool is2d)
-		: Mesh<V>(vertexCapacity, is2d)
-		, m_IndexCapacity(indexCapacity)
-	{
-	}
-
+	explicit MeshIndexed(MeshInfo info) : Mesh<V>(info) {}
 	virtual ~MeshIndexed() override = default;
 
 	MeshIndexed(const MeshIndexed&) = delete;
@@ -43,39 +38,38 @@ public:
 		VkDeviceSize offsets[] = { 0 };
 		vkCmdBindVertexBuffers(commandBuffer, 0, 1, vertexBuffers, offsets);
 
-		vkCmdBindIndexBuffer(commandBuffer, m_IndexBuffer, 0, VK_INDEX_TYPE_UINT16);
+		vkCmdBindIndexBuffer(commandBuffer, m_IndexBuffer, 0, VK_INDEX_TYPE_UINT32);
 
 		vkCmdDrawIndexed(commandBuffer, static_cast<uint32_t>(m_Indices.size()), 1, 0, 0, 0);
 	}
 
-	void AddIndex(uint16_t index)
+	void AddIndex(uint32_t index)
 	{
 		m_Indices.push_back(index);
 	}
-	void AddIndices(const std::vector<uint16_t>& idcs)
+	void AddIndices(const std::vector<uint32_t>& idcs)
 	{
 		m_Indices.insert(m_Indices.end(), idcs.begin(), idcs.end());
 	}
 
 private:
-	uint32_t m_IndexCapacity;
 	VkBuffer m_IndexBuffer{ nullptr };
 	VkDeviceMemory m_IndexBufferMemory{ nullptr };
-	std::vector<uint16_t> m_Indices;
+	std::vector<uint32_t> m_Indices;
 
 	void CreateIndexBuffer(const GameContext& context)
 	{
-		VkDeviceSize bufferSize = sizeof(uint16_t) * m_Indices.size();
+		VkDeviceSize bufferSize = sizeof(uint32_t) * m_Indices.size();
 
 		VkBuffer stagingBuffer;
 		VkDeviceMemory stagingBufferMemory;
-		Mesh<V>::CreateBuffer(context, bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+		CreateBuffer(context, bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
 			VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, stagingBuffer,
 			stagingBufferMemory);
 
 		UpdateIndexBuffer(context, bufferSize, stagingBufferMemory);
 
-		Mesh<V>::CreateBuffer(context, bufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT,
+		CreateBuffer(context, bufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT,
 			VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, m_IndexBuffer, m_IndexBufferMemory);
 
 		Mesh<V>::CopyBuffer(context, stagingBuffer, m_IndexBuffer, bufferSize);
