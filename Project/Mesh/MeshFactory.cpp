@@ -1,5 +1,64 @@
 #include "MeshFactory.h"
 
+std::pair<std::vector<uint32_t>, std::vector<PosColNorm>> MeshFactory::CreatePyramid(const glm::vec3& pos, float height, float baseSize)
+{
+	// Colors
+	constexpr glm::vec3 red = { 1,0,0 };
+	constexpr glm::vec3 green = { 0,1,0 };
+	constexpr glm::vec3 blue = { 0,0,1 };
+
+	// Positions
+	//      5
+	//      |
+	//    4-|---3
+	//   /  |  /
+	//	1-----2
+	const glm::vec3 p1 = { pos.x,						pos.y,			pos.z };
+	const glm::vec3 p2 = { pos.x + baseSize,			pos.y,			pos.z };
+	const glm::vec3 p3 = { pos.x + baseSize,			pos.y,			pos.z - baseSize };
+	const glm::vec3 p4 = { pos.x,						pos.y,			pos.z - baseSize };
+	const glm::vec3 p5 = { pos.x + baseSize / 2.f,pos.y + height,	pos.z - baseSize / 2.f };
+
+	// Normals
+	constexpr glm::vec3 nFront = { 0,1,1 };
+	constexpr glm::vec3 nBack = { 0,1,-1 };
+	constexpr glm::vec3 nLeft = { -1,1,0 };
+	constexpr glm::vec3 nRight = { 1,1,0 };
+	constexpr glm::vec3 nBottom = { 0,-1,0 };
+
+	std::vector<PosColNorm> data;
+	std::vector<uint32_t> indices;
+
+	data.push_back({ p1, red, nFront });
+	data.push_back({ p2, red, nFront });
+	data.push_back({ p5, red, nFront });
+	indices.insert(indices.end(), { 0, 1, 2 });
+
+	data.push_back({ p4, red, nBack });
+	data.push_back({ p5, red, nBack });
+	data.push_back({ p3, red, nBack });
+	indices.insert(indices.end(), { 3, 4, 5 });
+
+	data.push_back({ p5, green, nLeft });
+	data.push_back({ p4, green, nLeft });
+	data.push_back({ p1, green, nLeft });
+	indices.insert(indices.end(), { 6, 7, 8 });
+
+	data.push_back({ p3, green, nRight });
+	data.push_back({ p5, green, nRight });
+	data.push_back({ p2, green, nRight });
+	indices.insert(indices.end(), { 9, 10, 11 });
+
+	data.push_back({ p4, blue, nBottom });
+	data.push_back({ p3, blue, nBottom });
+	data.push_back({ p2, blue, nBottom });
+	data.push_back({ p1, blue, nBottom });
+	indices.insert(indices.end(), { 12, 13, 14, 14, 15, 12 });
+
+	return std::make_pair(indices, data);
+
+}
+
 std::pair<std::vector<uint32_t>, std::vector<PosColNorm>> MeshFactory::CreateCube(const glm::vec3& pos, float size)
 {
 	constexpr glm::vec3 red = { 1,0,0 };
