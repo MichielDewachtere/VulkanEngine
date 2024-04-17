@@ -37,8 +37,9 @@ private:
 	Mesh<PosCol2D>* m_pTriangle{ nullptr };
 	MeshIndexed<PosCol2D>* m_pRectangle{ nullptr };
 
-	MeshIndexed<PosColNorm>* m_pCube1{ nullptr };
-	MeshIndexed<PosTexNorm>* m_pCube2{ nullptr };
+	MeshIndexed<PosColNorm>* m_pColoredCube{ nullptr };
+	MeshIndexed<PosColNorm>* m_pColoredPyramid{ nullptr };
+	MeshIndexed<PosTexNorm>* m_pTexturedCube{ nullptr };
 	MeshIndexed<PosTexNorm>* m_pModel{ nullptr };
 
 	const std::vector<const char*> m_ValidationLayers =

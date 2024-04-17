@@ -202,11 +202,24 @@ void Engine::InitGame()
 		info.vertexCapacity = static_cast<uint32_t>(vertices.size());
 		info.usesUbo = true;
 
-		m_pCube1 = new MeshIndexed<PosColNorm>(info);
-		materialManager.GetMaterial<PosColNormPipeline, PosColNorm>()->BindMesh(m_GameContext, m_pCube1);
-		m_pCube1->AddVertices(vertices);
-		m_pCube1->AddIndices(indices);
-		m_pCube1->Init(m_GameContext);
+		m_pColoredCube = new MeshIndexed<PosColNorm>(info);
+		materialManager.GetMaterial<PosColNormPipeline, PosColNorm>()->BindMesh(m_GameContext, m_pColoredCube);
+		m_pColoredCube->AddVertices(vertices);
+		m_pColoredCube->AddIndices(indices);
+		m_pColoredCube->Init(m_GameContext);
+	}
+	{
+		auto [indices, vertices] = MeshFactory::CreatePyramid({ -2,0,0 }, 1, 1);
+		MeshInfo info;
+		info.indexCapacity = static_cast<uint32_t>(indices.size());
+		info.vertexCapacity = static_cast<uint32_t>(vertices.size());
+		info.usesUbo = true;
+
+		m_pColoredPyramid = new MeshIndexed<PosColNorm>(info);
+		materialManager.GetMaterial<PosColNormPipeline, PosColNorm>()->BindMesh(m_GameContext, m_pColoredPyramid);
+		m_pColoredPyramid->AddVertices(vertices);
+		m_pColoredPyramid->AddIndices(indices);
+		m_pColoredPyramid->Init(m_GameContext);
 	}
 	{
 		auto [indices, vertices] = MeshFactory::CreateCubeMap({ 2,0,0 }, 1);
@@ -216,11 +229,11 @@ void Engine::InitGame()
 		info.usesUbo = true;
 		info.texture = ContentManager::GetInstance().LoadTexture(m_GameContext, "Resources/textures/grass_side.png");
 
-		m_pCube2 = new MeshIndexed<PosTexNorm>(info);
-		materialManager.GetMaterial<PosTexNormPipeline, PosTexNorm>()->BindMesh(m_GameContext, m_pCube2);
-		m_pCube2->AddVertices(vertices);
-		m_pCube2->AddIndices(indices);
-		m_pCube2->Init(m_GameContext);
+		m_pTexturedCube = new MeshIndexed<PosTexNorm>(info);
+		materialManager.GetMaterial<PosTexNormPipeline, PosTexNorm>()->BindMesh(m_GameContext, m_pTexturedCube);
+		m_pTexturedCube->AddVertices(vertices);
+		m_pTexturedCube->AddIndices(indices);
+		m_pTexturedCube->Init(m_GameContext);
 	}
 	{
 		const auto model = ContentManager::GetInstance().LoadModel("Resources/Models/viking_room.obj", { 4,0,0 });
@@ -346,8 +359,9 @@ void Engine::CleanUp()
 
 	m_pTriangle->CleanUp(m_GameContext);
 	m_pRectangle->CleanUp(m_GameContext);
-	m_pCube1->CleanUp(m_GameContext);
-	m_pCube2->CleanUp(m_GameContext);
+	m_pColoredCube->CleanUp(m_GameContext);
+	m_pColoredPyramid->CleanUp(m_GameContext);
+	m_pTexturedCube->CleanUp(m_GameContext);
 	m_pModel->CleanUp(m_GameContext);
 
 	CommandPool::GetInstance().CleanUp(m_GameContext);
