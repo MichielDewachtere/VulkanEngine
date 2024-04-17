@@ -21,14 +21,8 @@ FetchContent_Declare(
     GIT_REPOSITORY https://github.com/libsdl-org/SDL_image.git
     GIT_TAG        release-2.8.2
 )
-# Fetch tinyobjloader from GitHub
-FetchContent_Declare(
-    tinyobjloader
-    GIT_REPOSITORY https://github.com/tinyobjloader/tinyobjloader.git
-    GIT_TAG        v1.0.6
-)
 
-FetchContent_MakeAvailable(SDL2 SDL2_image tinyobjloader)
+FetchContent_MakeAvailable(SDL2 SDL2_image)
 
 # Find the required packages
 find_package(Vulkan REQUIRED)

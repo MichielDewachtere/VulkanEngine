@@ -1,10 +1,10 @@
 #include "Model.h"
 
-#define TINYOBJLOADER_IMPLEMENTATION
 #include <iostream>
-#include <tiny_obj_loader.h>
-
 #include <unordered_map>
+
+#define TINYOBJLOADER_IMPLEMENTATION
+#include "Util/tiny_obj_loader.h"
 
 Model::Model(const std::string& path, const glm::vec3& pos)
 {
