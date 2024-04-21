@@ -1,31 +1,29 @@
-#ifndef ENGINE_H
-#define ENGINE_H
+#ifndef REALENGINE3D_H
+#define REALENGINE3D_H
 
 #define GLM_FORCE_DEPTH_ZERO_TO_ONE
 
 #include <iostream>
 #include <vulkan/vulkan_core.h>
-#include "Util/Structs.h"
+
 #include "Mesh/MeshIndexed.h"
+#include "Util/Structs.h"
 
 class Renderer;
 class SwapChain;
 
-class Engine final
+class RealEngine final
 {
 public:
-	explicit Engine() = default;
-	~Engine() = default;
+	explicit RealEngine() = default;
+	~RealEngine() = default;
 
-	Engine(const Engine&) = delete;
-	Engine operator=(const Engine&) = delete;
-	Engine(Engine&&) = delete;
-	Engine operator=(Engine&&) = delete;
+	RealEngine(const RealEngine&) = delete;
+	RealEngine operator=(const RealEngine&) = delete;
+	RealEngine(RealEngine&&) = delete;
+	RealEngine operator=(RealEngine&&) = delete;
 
 	void Run();
-
-	static QueueFamilyIndices FindQueueFamilies(const GameContext& context);
-	static QueueFamilyIndices FindQueueFamilies(const VkPhysicalDevice& device, const VkSurfaceKHR& surface);
 
 private:
 	GameContext m_GameContext{};
@@ -84,4 +82,4 @@ private:
 	}
 };
 
-#endif // ENGINE_H
+#endif // REALENGINE3D_H

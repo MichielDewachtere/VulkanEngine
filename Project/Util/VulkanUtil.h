@@ -3,7 +3,7 @@
 
 #define MAX_FRAMES_IN_FLIGHT 2
 
-#include "structs.h"
+#include "Structs.h"
 #include "Concepts.h"
 
 // TODO: Delete this and rewrite it somewehre else
@@ -22,6 +22,7 @@ VkResult CreateDebugUtilsMessengerEXT(VkInstance instance, const VkDebugUtilsMes
 void DestroyDebugUtilsMessengerEXT(VkInstance instance, VkDebugUtilsMessengerEXT debugMessenger, const VkAllocationCallbacks* pAllocator);
 
 uint32_t FindMemoryType(const GameContext& context, uint32_t typeFilter, VkMemoryPropertyFlags properties);
+QueueFamilyIndices FindQueueFamilies(const VkPhysicalDevice& device, const VkSurfaceKHR& surface);
 
 void CreateImage(const GameContext& context, uint32_t width, uint32_t height, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage, VkMemoryPropertyFlags properties, VkImage& image, VkDeviceMemory& imageMemory);
 VkImageView CreateImageView(const GameContext& context, VkImage image, VkFormat format, VkImageAspectFlags aspectFlags);

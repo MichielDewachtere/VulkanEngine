@@ -2,11 +2,11 @@
 
 #include <stdexcept>
 
-#include "Engine.h"
+#include "Util/VulkanUtil.h"
 
 void CommandPool::Init(const GameContext& context)
 {
-	const QueueFamilyIndices queueFamilyIndices = Engine::FindQueueFamilies(context);
+	const QueueFamilyIndices queueFamilyIndices = FindQueueFamilies(context.vulkanContext.physicalDevice, context.vulkanContext.surface);
 
 	VkCommandPoolCreateInfo poolInfo{};
 	poolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;

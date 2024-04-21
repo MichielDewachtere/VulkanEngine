@@ -1,11 +1,13 @@
 #include "MeshFactory.h"
 
+#include <real_core/Colors.h>
+
 std::pair<std::vector<uint32_t>, std::vector<PosColNorm>> MeshFactory::CreatePyramid(const glm::vec3& pos, float height, float baseSize)
 {
 	// Colors
-	constexpr glm::vec3 red = { 1,0,0 };
-	constexpr glm::vec3 green = { 0,1,0 };
-	constexpr glm::vec3 blue = { 0,0,1 };
+	const glm::vec3 red = real::Colors::red;
+	const glm::vec3 green = real::Colors::green;
+	const glm::vec3 blue = real::Colors::blue;
 
 	// Positions
 	//      5

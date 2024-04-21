@@ -7,14 +7,10 @@
 #include <vulkan/vulkan_core.h>
 
 #include "Misc/Camera.h"
-
 #include "Core/CommandPool.h"
-
 #include "Content/ContentManager.h"
-
 #include "Util/Concepts.h"
 #include "Util/Structs.h"
-#include "Util/GameTime.h"
 #include "Util/VulkanUtil.h"
 
 struct MeshInfo
@@ -75,7 +71,6 @@ public:
 			return;
 
 		UniformBufferObject ubo{};
-		const auto time = GameTime::GetInstance().GetElapsed();
 		ubo.model = glm::rotate(glm::mat4(1.f), glm::radians(0.f), glm::vec3(0.0f, 0.0f, 1.0f));
 		ubo.proj = Camera::GetInstance().GetProjection();
 		ubo.proj[1][1] *= -1;

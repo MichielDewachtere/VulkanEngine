@@ -5,8 +5,6 @@
 
 #include "Util/VulkanUtil.h"
 
-#include "Engine.h"
-
 void SwapChain::CreateSwapChain(const GameContext& context)
 {
 	SwapChainSupportDetails swapChainSupport = QuerySwapChainSupport(context);
@@ -31,7 +29,7 @@ void SwapChain::CreateSwapChain(const GameContext& context)
 	createInfo.imageArrayLayers = 1;
 	createInfo.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
 
-	QueueFamilyIndices indices = Engine::FindQueueFamilies(context);
+	QueueFamilyIndices indices = FindQueueFamilies(context.vulkanContext.physicalDevice, context.vulkanContext.surface);
 	uint32_t queueFamilyIndices[] = { indices.graphicsFamily.value(), indices.presentFamily.value() };
 
 	if (indices.graphicsFamily != indices.presentFamily)

@@ -4,13 +4,13 @@
 #include <map>
 #include <memory>
 
+#include <real_core/Singleton.h>
+
 #include "Model.h"
 #include "Texture2D.h"
-
 #include "Util/Structs.h"
-#include "Util/Singleton.h"
 
-class ContentManager final : public Singleton<ContentManager> 
+class ContentManager final : public real::Singleton<ContentManager> 
 {
 public:
 	virtual ~ContentManager() override = default;

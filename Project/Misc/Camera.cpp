@@ -1,12 +1,14 @@
 // ReSharper disable CppRedundantQualifier
 #include "Camera.h"
 
+#include <real_core/GameTime.h>
+#include <real_core/Logger.h>
+
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
 #include "InputManager.h"
 #include "Graphics/Renderer.h"
-#include "Util/GameTime.h"
 #include "Core/SwapChain.h"
 
 void Camera::Init(const GameContext& context)
@@ -21,13 +23,15 @@ void Camera::Init(const GameContext& context)
 	m_ViewProjection = glm::mat4(1.f);
 	m_ViewProjectionInverse = glm::mat4(1.f);
 
+	real::Logger::LogInfo({ "Test" });
+
 	CalculateProjectionMatrix(context);
 }
 
-void Camera::Update(const GameContext& context)
+void Camera::Update(const GameContext& /*context*/)
 {
 	// Handle Input
-	const auto elapsedTime = GameTime::GetInstance().GetElapsed();
+	const auto elapsedTime = real::GameTime::GetInstance().GetElapsed();
 	HandleKeyboardInput(elapsedTime);
 	HandleMouseInput(elapsedTime);
 

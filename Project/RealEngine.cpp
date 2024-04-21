@@ -1,30 +1,23 @@
-#include "Engine.h"
+#include "RealEngine.h"
 
 #include <set>
 
 #include <SDL2/SDL_vulkan.h>
 #include <SDL_image.h>
 
-#include "Content/ContentManager.h"
-#include "Content/Model.h"
-#include "Core/CommandPool.h"
+#include <real_core/GameTime.h>
+
 #include "Core/DepthBuffer/DepthBufferManager.h"
-#include "Mesh/Mesh.h"
 #include "Graphics/ShaderManager.h"
-#include "Graphics/Renderer.h"
+#include "Material/MaterialManager.h"
 #include "Material/Pipelines/PosCol2DPipeline.h"
 #include "Material/Pipelines/PosColNormPipeline.h"
 #include "Material/Pipelines/PosTexNormPipeline.h"
-#include "Mesh/MeshIndexed.h"
-#include "Util/GameTime.h"
-#include "Material/Material.h"
-#include "Material/MaterialManager.h"
 #include "Mesh/MeshFactory.h"
-
-#include "Misc/Camera.h"
 #include "Misc/InputManager.h"
+#include "Graphics/Renderer.h"
 
-void Engine::Run()
+void RealEngine::Run()
 {
 	InitWindow();
 	InitVulkan();
@@ -36,52 +29,13 @@ void Engine::Run()
 	CleanUp();
 }
 
-QueueFamilyIndices Engine::FindQueueFamilies(const GameContext& context)
-{
-	return FindQueueFamilies(context.vulkanContext.physicalDevice, context.vulkanContext.surface);
-}
-
-QueueFamilyIndices Engine::FindQueueFamilies(const VkPhysicalDevice& device, const VkSurfaceKHR& surface)
-{
-	QueueFamilyIndices indices;
-
-	uint32_t queueFamilyCount = 0;
-	vkGetPhysicalDeviceQueueFamilyProperties(device, &queueFamilyCount, nullptr);
-
-	std::vector<VkQueueFamilyProperties> queueFamilies(queueFamilyCount);
-	vkGetPhysicalDeviceQueueFamilyProperties(device, &queueFamilyCount, queueFamilies.data());
-
-	int i = 0;
-	for (const auto& queueFamily : queueFamilies)
-	{
-		if (queueFamily.queueFlags & VK_QUEUE_GRAPHICS_BIT)
-			indices.graphicsFamily = i;
-
-		VkBool32 presentSupport = false;
-		vkGetPhysicalDeviceSurfaceSupportKHR(device, i, surface, &presentSupport);
-
-		if (presentSupport)
-			indices.presentFamily = i;
-
-		//if (queueFamily.queueFlags & VK_QUEUE_TRANSFER_BIT)
-		//	indices.transferFamily = i;
-
-		if (indices.isComplete())
-			break;
-
-		++i;
-	}
-
-	return indices;
-}
-
-void Engine::InitSDL()
+void RealEngine::InitSDL()
 {
 	InitWindow();
 	InitSDLImage();
 }
 
-void Engine::InitWindow()
+void RealEngine::InitWindow()
 {
 	if (SDL_Init(SDL_INIT_VIDEO) != 0)
 	{
@@ -107,7 +61,7 @@ void Engine::InitWindow()
 	m_GameContext.pWindow = pWindow;
 }
 
-void Engine::InitSDLImage()
+void RealEngine::InitSDLImage()
 {
 	// Initialize SDL_image
 	const int imgFlags = IMG_INIT_PNG; // You can specify other image formats here
@@ -117,7 +71,7 @@ void Engine::InitSDLImage()
 	}
 }
 
-void Engine::InitVulkan()
+void RealEngine::InitVulkan()
 {
 	// Create Instance
 	CreateInstance();
@@ -138,7 +92,7 @@ void Engine::InitVulkan()
 	CommandPool::GetInstance().Init(m_GameContext);
 }
 
-void Engine::InitRenderer()
+void RealEngine::InitRenderer()
 {
 	auto& shaderManager = ShaderManager::GetInstance();
 	auto& materialManager = MaterialManager::GetInstance();
@@ -154,7 +108,7 @@ void Engine::InitRenderer()
 	shaderManager.DestroyShaderModules(m_GameContext.vulkanContext.device);
 }
 
-void Engine::InitGame()
+void RealEngine::InitGame()
 {
 	const auto& materialManager = MaterialManager::GetInstance();
 
@@ -253,9 +207,9 @@ void Engine::InitGame()
 	}
 }
 
-void Engine::MainLoop()
+void RealEngine::MainLoop()
 {
-	auto& time = GameTime::GetInstance();
+	auto& time = real::GameTime::GetInstance();
 	auto& input = InputManager::GetInstance();
 	auto& camera = Camera::GetInstance();
 
@@ -343,12 +297,11 @@ void Engine::MainLoop()
 			timer = 0;
 			std::cout << "\033[1;90mFPS: " << time.GetFPS_Unsigned() << "\033[0m\n";
 		}
-
 	}
 	vkDeviceWaitIdle(m_GameContext.vulkanContext.device);
 }
 
-void Engine::CleanUp()
+void RealEngine::CleanUp()
 {
 	Renderer::GetInstance().CleanUp(m_GameContext);
 	DepthBufferManager::GetInstance().CleanUp(m_GameContext);
@@ -381,7 +334,7 @@ void Engine::CleanUp()
 	SDL_Quit();
 }
 
-void Engine::CreateInstance()
+void RealEngine::CreateInstance()
 {
 	if (enableValidationLayers && !CheckValidationLayerSupport())
 	{
@@ -426,7 +379,7 @@ void Engine::CreateInstance()
 	}
 }
 
-std::vector<const char*> Engine::GetRequiredExtensions()
+std::vector<const char*> RealEngine::GetRequiredExtensions()
 {
 	std::vector<const char*> extensions;
 
@@ -453,7 +406,7 @@ std::vector<const char*> Engine::GetRequiredExtensions()
 	return extensions;
 }
 
-void Engine::PopulateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT& createInfo)
+void RealEngine::PopulateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT& createInfo)
 {
 	createInfo = {};
 	createInfo.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT;
@@ -462,7 +415,7 @@ void Engine::PopulateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT
 	createInfo.pfnUserCallback = DebugCallback;
 }
 
-bool Engine::CheckValidationLayerSupport()
+bool RealEngine::CheckValidationLayerSupport()
 {
 	uint32_t layerCount;
 	vkEnumerateInstanceLayerProperties(&layerCount, nullptr);
@@ -488,7 +441,7 @@ bool Engine::CheckValidationLayerSupport()
 	return true;
 }
 
-void Engine::SetupDebugMessenger()
+void RealEngine::SetupDebugMessenger()
 {
 	if (!enableValidationLayers) 
 		return;
@@ -502,7 +455,7 @@ void Engine::SetupDebugMessenger()
 	}
 }
 
-void Engine::CreateSurface()
+void RealEngine::CreateSurface()
 {
 	const auto result = SDL_Vulkan_CreateSurface(m_GameContext.pWindow, m_Instance, &m_GameContext.vulkanContext.surface);
 	if (result == SDL_FALSE) {
@@ -510,7 +463,7 @@ void Engine::CreateSurface()
 	}
 }
 
-void Engine::PickPhysicalDevice()
+void RealEngine::PickPhysicalDevice()
 {
 	uint32_t deviceCount = 0;
 	vkEnumeratePhysicalDevices(m_Instance, &deviceCount, nullptr);
@@ -541,7 +494,7 @@ void Engine::PickPhysicalDevice()
 	}
 }
 
-bool Engine::IsDeviceSuitable(const VkPhysicalDevice& device)
+bool RealEngine::IsDeviceSuitable(const VkPhysicalDevice& device)
 {
 	QueueFamilyIndices indices = FindQueueFamilies(device, m_GameContext.vulkanContext.surface);
 	const bool extensionsSupported = CheckDeviceExtensionSupport(device);
@@ -552,7 +505,7 @@ bool Engine::IsDeviceSuitable(const VkPhysicalDevice& device)
 	return indices.isComplete() && extensionsSupported /*&& swapChainAdequate */&& supportedFeatures.samplerAnisotropy;
 }
 
-bool Engine::CheckDeviceExtensionSupport(VkPhysicalDevice device)
+bool RealEngine::CheckDeviceExtensionSupport(VkPhysicalDevice device)
 {
 	uint32_t extensionCount;
 	vkEnumerateDeviceExtensionProperties(device, nullptr, &extensionCount, nullptr);
@@ -569,9 +522,9 @@ bool Engine::CheckDeviceExtensionSupport(VkPhysicalDevice device)
 	return requiredExtensions.empty();
 }
 
-void Engine::CreateLogicalDevice()
+void RealEngine::CreateLogicalDevice()
 {
-	QueueFamilyIndices indices = FindQueueFamilies(m_GameContext);
+	QueueFamilyIndices indices = FindQueueFamilies(m_GameContext.vulkanContext.physicalDevice, m_GameContext.vulkanContext.surface);
 
 	std::vector<VkDeviceQueueCreateInfo> queueCreateInfos;
 	std::set<uint32_t> uniqueQueueFamilies = { indices.graphicsFamily.value(), indices.presentFamily.value()/*, indices.transferFamily.value()*/ };

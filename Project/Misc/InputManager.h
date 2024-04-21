@@ -1,12 +1,10 @@
 #ifndef INPUTMANAGER_H
 #define INPUTMANAGER_H
 
-#include <map>
-
-#include "Util/Singleton.h"
-#include "Util/Structs.h"
-
 #include <glm/glm.hpp>
+#include <real_core/Singleton.h>
+
+#include "Util/Structs.h"
 
 typedef unsigned char* p_byte;
 typedef unsigned char byte;
@@ -25,7 +23,7 @@ enum class MouseButton : char
 	right = 3
 };
 
-class InputManager final : public Singleton<InputManager>
+class InputManager final : public real::Singleton<InputManager>
 {
 public:
 	~InputManager() override = default;

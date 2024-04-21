@@ -4,10 +4,11 @@
 #include <cstdint>
 #include <memory>
 
-#include "Util/Singleton.h"
+#include <real_core/Singleton.h>
+
 #include "DepthBuffer.h"
 
-class DepthBufferManager final : public Singleton<DepthBufferManager>
+class DepthBufferManager final : public real::Singleton<DepthBufferManager>
 {
 public:
 	virtual ~DepthBufferManager() override = default;

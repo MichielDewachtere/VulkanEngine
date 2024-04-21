@@ -6,7 +6,8 @@
 #include <algorithm>
 #include <ranges>
 
-#include "Util/Singleton.h"
+#include <real_core/Singleton.h>
+
 #include "Util/Structs.h"
 #include "Util/Concepts.h"
 
@@ -14,7 +15,7 @@
 
 class BaseMaterial;
 
-class MaterialManager final : public Singleton<MaterialManager>
+class MaterialManager final : public real::Singleton<MaterialManager>
 {
 public:
 	virtual ~MaterialManager() override = default;

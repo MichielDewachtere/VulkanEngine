@@ -2,7 +2,7 @@
 
 #include <array>
 #include <vulkan/vulkan_core.h>
-#include "Engine.h"
+#include "RealEngine.h"
 #include "RenderPass.h"
 #include "Core/SwapChain.h"
 #include "Core/CommandBuffers/CommandBuffer.h"
@@ -12,7 +12,7 @@
 void Renderer::Init(GameContext& context)
 {
 	// Create Queues
-	QueueFamilyIndices indices = Engine::FindQueueFamilies(context);
+	const QueueFamilyIndices indices = FindQueueFamilies(context.vulkanContext.physicalDevice, context.vulkanContext.surface);
 
 	vkGetDeviceQueue(context.vulkanContext.device, indices.graphicsFamily.value(), 0, &m_GraphicsQueue);
 	vkGetDeviceQueue(context.vulkanContext.device, indices.presentFamily.value(), 0, &m_PresentQueue);

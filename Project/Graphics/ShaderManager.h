@@ -4,7 +4,8 @@
 #include <map>
 #include <string>
 
-#include "Util/Singleton.h"
+#include <real_core/Singleton.h>
+
 #include "Util/VulkanUtil.h"
 
 enum class ShaderType
@@ -15,7 +16,7 @@ enum class ShaderType
 	//tessellation = 3,
 };
 
-class ShaderManager final : public Singleton<ShaderManager>
+class ShaderManager final : public real::Singleton<ShaderManager>
 {
 public:
 	void Init(std::string shaderSourcePath);  // NOLINT(clang-diagnostic-overloaded-virtual)

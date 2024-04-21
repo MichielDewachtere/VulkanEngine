@@ -3,13 +3,13 @@
 
 #include <memory>
 #include <vulkan/vulkan_core.h>
+#include <real_core/Singleton.h>
 
-#include "Util/Singleton.h"
 #include "CommandBuffers/CommandBuffer.h"
 
 struct GameContext;
 
-class CommandPool final : public Singleton<CommandPool>
+class CommandPool final : public real::Singleton<CommandPool>
 {
 public:
 	virtual ~CommandPool() override = default;

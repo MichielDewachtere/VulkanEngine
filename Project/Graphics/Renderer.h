@@ -1,12 +1,13 @@
 #ifndef RENDERER_H
 #define RENDERER_H
 
-#include "Util/Singleton.h"
+#include <real_core/Singleton.h>
+
 #include "Util/Structs.h"
 
 class SwapChain;
 
-class Renderer final : public Singleton<Renderer>
+class Renderer final : public real::Singleton<Renderer>
 {
 public:
 	virtual ~Renderer() override = default;

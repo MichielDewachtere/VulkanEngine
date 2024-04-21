@@ -2,11 +2,11 @@
 #ifndef CAMERA_H
 #define CAMERA_H
 
-#include "Util/Singleton.h"
+#include <real_core/Singleton.h>
 #include "Util/Structs.h"
 
 // TODO: Make a manager for cameras
-class Camera final : public Singleton<Camera>
+class Camera final : public real::Singleton<Camera>
 {
 public:
 	virtual ~Camera() override = default;
