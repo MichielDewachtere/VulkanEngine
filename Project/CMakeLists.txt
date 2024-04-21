@@ -27,20 +27,30 @@ add_custom_target(
 file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/resources/textures DESTINATION ${CMAKE_CURRENT_BINARY_DIR}/resources)
 file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/resources/models DESTINATION ${CMAKE_CURRENT_BINARY_DIR}/resources)
 
+#file (GLOB UTIL
+#    "Util/VulkanUtil.h"
+#    "Util/VulkanUtil.cpp"
+#    "Util/Singleton.h" 
+#    "Util/Structs.h"
+#    "Util/GameTime.h"
+#    "Util/GameTime.cpp"
+#    # Logger
+#    "Util/Logger.cpp"
+#    "Util/Logger.h"
+#    "Util/Concepts.h" 
+#    "Util/tiny_obj_loader.h" 
+#)
+#
+#source_group("Util", FILES ${UTIL})
+
 set(SOURCES
     "main.cpp"
-    "Engine.h" 
-    "Engine.cpp" 
+    "RealEngine.h" 
+    "RealEngine.cpp" 
 
     "Util/VulkanUtil.h"
-    "Util/VulkanUtil.cpp"
-    "Util/Singleton.h" 
+    "Util/VulkanUtil.cpp"  
     "Util/Structs.h"
-    "Util/GameTime.h"
-    "Util/GameTime.cpp"
-    # Logger
-    "Util/Logger.cpp"
-    "Util/Logger.h"
     "Util/Concepts.h" 
     "Util/tiny_obj_loader.h" 
 
@@ -68,7 +78,6 @@ set(SOURCES
     "Graphics/ShaderManager.h" 
     
     # Mesh
-    
     "Mesh/Mesh.h" 
     "Mesh/Mesh.cpp" 
     "Mesh/MeshIndexed.h" 
@@ -112,10 +121,23 @@ set(SOURCES
     "Content/Model.h" 
 )
 
-# Create the executable
-add_executable(${PROJECT_NAME} ${SOURCES} ${GLSL_SOURCE_FILES} )
+add_executable(${PROJECT_NAME} ${SOURCES} ${GLSL_SOURCE_FILES})
+
+if (CMAKE_SYSTEM_NAME STREQUAL "Windows")
+    add_custom_command(
+        TARGET ${PROJECT_NAME} POST_BUILD
+        COMMAND "${CMAKE_COMMAND}" -E copy_if_different "$<TARGET_FILE:SDL2::SDL2>" "$<TARGET_FILE_DIR:VulkanEngine>"
+        VERBATIM
+    )
+add_custom_command(
+        TARGET ${PROJECT_NAME} POST_BUILD
+        COMMAND "${CMAKE_COMMAND}" -E copy_if_different "$<TARGET_FILE:SDL2_image>" "$<TARGET_FILE_DIR:VulkanEngine>"
+        VERBATIM
+    )
+endif()
+
 add_dependencies(${PROJECT_NAME} Shaders)
 # Link libraries
-target_include_directories(${PROJECT_NAME} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR} )
-target_include_directories(${PROJECT_NAME} PRIVATE SDL2::SDL2 SDL2::SDL2main SDL2_image)
-target_link_libraries(${PROJECT_NAME} PRIVATE ${Vulkan_LIBRARIES} SDL2::SDL2 SDL2::SDL2main SDL2_image)
+target_include_directories(${PROJECT_NAME} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
+target_include_directories(${PROJECT_NAME} PRIVATE SDL2::SDL2 SDL2::SDL2main SDL2_image RealCore)
+target_link_libraries(${PROJECT_NAME} PRIVATE ${Vulkan_LIBRARIES} SDL2::SDL2 SDL2::SDL2main SDL2_image RealCore)
