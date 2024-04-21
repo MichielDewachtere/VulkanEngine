@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.10)
+cmake_minimum_required(VERSION 3.25)
 
 # Project Name
 project(VulkanEngine)
@@ -16,13 +16,31 @@ FetchContent_Declare(
     GIT_TAG        release-2.30.1 # You can change this to the specific version you need
 )
 
+FetchContent_MakeAvailable(SDL2)
+
 FetchContent_Declare(
     SDL2_image
     GIT_REPOSITORY https://github.com/libsdl-org/SDL_image.git
     GIT_TAG        release-2.8.2
 )
 
-FetchContent_MakeAvailable(SDL2 SDL2_image)
+FetchContent_MakeAvailable(SDL2_image)
+
+set(REALCORE_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/RealCore")
+message(STATUS "About to fetch real core from ${REALCORE_SOURCE_DIR}")
+FetchContent_Declare(
+    RealCore
+    SOURCE_DIR ${REALCORE_SOURCE_DIR}
+)
+
+FetchContent_MakeAvailable(RealCore)
+
+# Test if the library target exists
+if(TARGET RealCore)
+    message(STATUS "RealCore is included")
+else()
+    message(STATUS "RealCore is not included")
+endif()
 
 # Find the required packages
 find_package(Vulkan REQUIRED)
