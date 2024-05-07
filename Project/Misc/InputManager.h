@@ -1,5 +1,5 @@
-#ifndef INPUTMANAGER_H
-#define INPUTMANAGER_H
+#ifndef NATIVEINPUTMANAGER_H
+#define NATIVEINPUTMANAGER_H
 
 #include <glm/glm.hpp>
 #include <real_core/Singleton.h>
@@ -63,4 +63,4 @@ private:
 	static bool IsKeyCodeValid(int code);
 };
 
-#endif // INPUTMANAGER_H
+#endif // NATIVEINPUTMANAGER_H
