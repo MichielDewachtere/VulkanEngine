@@ -2,34 +2,26 @@
 #include "Camera.h"
 
 #include <real_core/GameTime.h>
-#include <real_core/Logger.h>
+#include <real_core/GameObject.h>
 
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
 #include "InputManager.h"
+#include "RealEngine.h"
 #include "Graphics/Renderer.h"
 #include "Core/SwapChain.h"
 
-void Camera::Init(const GameContext& context)
+Camera::Camera(real::GameObject* pOwner)
+	: Component(pOwner)
 {
-	m_FarPlane = 100.0f;
-	m_NearPlane = 0.1f;
-	m_FOV = 45.0f;
-
-	m_Projection = glm::mat4(1.f);
-	m_View = glm::mat4(1.f);
-	m_ViewInverse = glm::mat4(1.f);
-	m_ViewProjection = glm::mat4(1.f);
-	m_ViewProjectionInverse = glm::mat4(1.f);
-
-	real::Logger::LogInfo({ "Test" });
-
-	CalculateProjectionMatrix(context);
+	Init(RealEngine::GetGameContext());
 }
 
-void Camera::Update(const GameContext& /*context*/)
+void Camera::Update()
 {
+	auto context = RealEngine::GetGameContext();
+
 	// Handle Input
 	const auto elapsedTime = real::GameTime::GetInstance().GetElapsed();
 	HandleKeyboardInput(elapsedTime);
@@ -60,12 +52,27 @@ void Camera::Update(const GameContext& /*context*/)
 	m_ViewProjectionInverse = viewProjectionInv;
 }
 
+void Camera::Init(const GameContext& context)
+{
+	m_FarPlane = 100.0f;
+	m_NearPlane = 0.1f;
+	m_FOV = 45.0f;
+
+	m_Projection = glm::mat4(1.f);
+	m_View = glm::mat4(1.f);
+	m_ViewInverse = glm::mat4(1.f);
+	m_ViewProjection = glm::mat4(1.f);
+	m_ViewProjectionInverse = glm::mat4(1.f);
+
+	CalculateProjectionMatrix(context);
+}
+
 void Camera::CalculateViewMatrix()
 {
-	//ubo.view = glm::lookAt(glm::vec3(2.0f, 2.0f, 2.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+	const auto worldPos = GetOwner()->GetTransform()->GetWorldPosition();
 
-	const auto target = m_Position - m_Forward;
-	m_View = glm::lookAt(m_Position, target, m_Up);
+	const auto target = worldPos - m_Forward;
+	m_View = glm::lookAt(worldPos, target, m_Up);
 	m_ViewInverse = glm::inverse(m_View);
 }
 
@@ -97,10 +104,14 @@ void Camera::HandleKeyboardInput(float dt)
 	if (input.IsKeyboardKey(InputState::down, SDL_SCANCODE_Q))
 		speed *= m_SpeedMultiplier;
 
-	m_Position += m_Forward * move.y * speed * dt;
-	m_Position += glm::vec3(unit_y) * move.z * speed * dt;
-	m_Position += m_Right * move.x * speed * dt;
+	if (move == glm::vec3{ 0,0,0 })
+		return;
 
+	auto worldPos = GetOwner()->GetTransform()->GetWorldPosition();
+	worldPos += m_Forward * move.y * speed * dt;
+	worldPos += glm::vec3(unit_y) * move.z * speed * dt;
+	worldPos += m_Right * move.x * speed * dt;
+	GetOwner()->GetTransform()->SetWorldPosition(worldPos);
 }
 
 void Camera::HandleMouseInput(float dt)

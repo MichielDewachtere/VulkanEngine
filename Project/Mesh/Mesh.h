@@ -6,12 +6,17 @@
 #include <glm/gtc/type_ptr.hpp>
 #include <vulkan/vulkan_core.h>
 
+#include <real_core/Component.h>
+#include <real_core/GameObject.h>
+
+#include "Misc/CameraManager.h"
 #include "Misc/Camera.h"
 #include "Core/CommandPool.h"
 #include "Content/ContentManager.h"
 #include "Util/Concepts.h"
 #include "Util/Structs.h"
 #include "Util/VulkanUtil.h"
+#include "RealEngine.h"
 
 struct MeshInfo
 {
@@ -21,12 +26,14 @@ struct MeshInfo
 };
 
 template <vertex_type V>
-class Mesh
+class Mesh : public real::Component
 {
 public:
-	explicit Mesh(MeshInfo info) : m_Info(info) {}
+	explicit Mesh(real::GameObject* pOwner, MeshInfo info)
+		: Component(pOwner)
+		, m_Info(info) {}
 
-	virtual ~Mesh() = default;
+	virtual ~Mesh() override = default;
 
 	Mesh(const Mesh&) = delete;
 	Mesh& operator=(const Mesh&) = delete;
@@ -37,8 +44,11 @@ public:
 	{
 		CreateVertexBuffer(context);
 	}
-	virtual void CleanUp(const GameContext& context)
+
+	virtual void Kill() override
 	{
+		const auto context = RealEngine::GetGameContext();
+
 		for (size_t i = 0; i < m_UniformBuffers.size(); i++)
 		{
 			vkDestroyBuffer(context.vulkanContext.device, m_UniformBuffers[i], nullptr);
@@ -65,16 +75,16 @@ public:
 		CreateDescriptorSets(context, layout);
 	}
 
-	void Update(uint32_t currentFrame, VkCommandBuffer buffer, VkPipelineLayout layout)
+	void UpdateUbo(uint32_t currentFrame, VkCommandBuffer buffer, VkPipelineLayout layout) const
 	{
 		if (m_Info.usesUbo == false)
 			return;
 
 		UniformBufferObject ubo{};
-		ubo.model = glm::rotate(glm::mat4(1.f), glm::radians(0.f), glm::vec3(0.0f, 0.0f, 1.0f));
-		ubo.proj = Camera::GetInstance().GetProjection();
+		ubo.model = GetOwner()->GetTransform()->GetWorldMatrix();
+		ubo.proj = CameraManager::GetInstance().GetActiveCamera()->GetProjection();
 		ubo.proj[1][1] *= -1;
-		ubo.view = Camera::GetInstance().GetView();
+		ubo.view = CameraManager::GetInstance().GetActiveCamera()->GetView();
 
 		memcpy(m_UniformBuffersMapped[currentFrame], &ubo, sizeof(UniformBufferObject));
 

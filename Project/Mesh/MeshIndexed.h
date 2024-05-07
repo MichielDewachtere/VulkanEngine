@@ -11,7 +11,8 @@ template <vertex_type V>
 class MeshIndexed final : public Mesh<V>
 {
 public:
-	explicit MeshIndexed(MeshInfo info) : Mesh<V>(info) {}
+	explicit MeshIndexed(real::GameObject* pOwner, MeshInfo info)
+		: Mesh<V>(pOwner, info) {}
 	virtual ~MeshIndexed() override = default;
 
 	MeshIndexed(const MeshIndexed&) = delete;
@@ -24,12 +25,15 @@ public:
 		CreateIndexBuffer(context);
 		Mesh<V>::Init(context);
 	}
-	virtual void CleanUp(const GameContext& context) override
+
+	virtual void Kill() override
 	{
+		const auto context = RealEngine::GetGameContext();
+
 		vkDestroyBuffer(context.vulkanContext.device, m_IndexBuffer, nullptr);
 		vkFreeMemory(context.vulkanContext.device, m_IndexBufferMemory, nullptr);
 
-		Mesh<V>::CleanUp(context);
+		Mesh<V>::Kill();
 	}
 
 	virtual void Draw(VkCommandBuffer commandBuffer) override
