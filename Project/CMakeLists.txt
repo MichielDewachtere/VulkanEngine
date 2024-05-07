@@ -119,7 +119,11 @@ set(SOURCES
     "Content/Texture2D.cpp"
     "Content/Model.cpp" 
     "Content/Model.h" 
-)
+
+    #ImGui
+    "ImGui/imgui_impl_vulkan.cpp"
+    "ImGui/imgui_impl_vulkan.h"
+ "Scenes/TestScene.cpp" "Scenes/TestScene.h" "Misc/CameraManager.cpp")
 
 add_executable(${PROJECT_NAME} ${SOURCES} ${GLSL_SOURCE_FILES})
 
