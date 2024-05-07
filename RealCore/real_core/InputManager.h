@@ -36,6 +36,8 @@ namespace real
 		void EnableKeyboardInput(bool enable) { m_KeyboardEnabled = enable; }
 		void EnableGamePadInput(bool enable) { m_GamePadEnabled = enable; }
 
+		void RemoveGameObjectCommands(const GameObject* pGo);
+
 	private:
 		friend class Singleton<InputManager>;
 		InputManager();

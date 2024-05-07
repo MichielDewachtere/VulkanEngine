@@ -83,6 +83,7 @@ void real::SceneManager::Destroy()
 	for (const auto& scene : m_ScenePtrs)
 	{
 		scene->Destroy();
+		scene->Update();
 	}
 }
 

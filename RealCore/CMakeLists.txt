@@ -25,6 +25,14 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(glm)
 
+# Fetch SDL_mixer
+FetchContent_Declare(
+    SDL2_mixer
+    GIT_REPOSITORY https://github.com/libsdl-org/SDL_mixer
+    GIT_TAG        release-2.8.0
+)
+FetchContent_MakeAvailable(SDL2_mixer)
+
 # Find XInput library (assuming it's part of DirectX)
 #find_path(DIRECTX_INCLUDE_DIR NAMES "XInput.h" PATH_SUFFIXES "Include")
 #find_library(DIRECTX_LIB NAMES "XInput.lib" PATH_SUFFIXES "Lib")
@@ -41,4 +49,4 @@ add_library(RealCore STATIC ${SOURCES})
 # Include directories for the library
 target_include_directories(RealCore PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}")
 # Link against SDL2 and GLM
-target_link_libraries(RealCore PRIVATE ${LIBS} SDL2::SDL2 SDL2::SDL2main glm::glm)
+target_link_libraries(RealCore PRIVATE ${LIBS} SDL2::SDL2 SDL2::SDL2main glm::glm SDL2_mixer)

@@ -1,7 +1,7 @@
 #ifndef SCENE_H
 #define SCENE_H
 
-#include <stdint.h>
+#include <cstdint>
 
 #include "GameObject.h"
 
@@ -30,7 +30,7 @@ namespace real
 		void SetDefaultInputMap(std::string inputMap) { m_InputMapName = std::move(inputMap); }
 		std::string GetDefaultInputMap() const { return m_InputMapName; }
 
-		GameObject& CreateGameObject(std::string tag = "");
+		GameObject& CreateGameObject(TransformInfo info = {}, std::string tag = "");
 		void AddGameObject(GameObject* pGo);
 		void AddGameObject(std::unique_ptr<GameObject> pGo);
 		GameObject* GetGameObject(uint32_t id) const;

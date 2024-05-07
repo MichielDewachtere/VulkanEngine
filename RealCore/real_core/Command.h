@@ -12,7 +12,6 @@ namespace real
 	{
 	public:
 		Command(int id, int controllerId)
-		// TODO: maybe find different solution for command deletion
 			: m_Id(id) , m_ControllerId(controllerId) {}
 		virtual ~Command() = default;
 
@@ -21,6 +20,7 @@ namespace real
 		Command(Command&& other) = delete;
 		Command& operator=(Command&& rhs) = delete;
 
+		//TODO: Start doesnt get called
 		virtual void Start() {}
 		virtual void Execute() = 0;
 
@@ -32,24 +32,19 @@ namespace real
 		int m_Id, m_ControllerId;
 	};
 
-	class GameObjectCommand
-		: public Command
-		, public Observer<GameObjectEvent>
+	class GameObjectCommand : public Command
 	{
 	public:
 		explicit GameObjectCommand(int id, int controllerId, GameObject* pGameObject);
-		virtual ~GameObjectCommand() override;
+		virtual ~GameObjectCommand() override = default;
 
 		GameObjectCommand(const GameObjectCommand& other) = delete;
 		GameObjectCommand& operator=(const GameObjectCommand& rhs) = delete;
 		GameObjectCommand(GameObjectCommand&& other) = delete;
 		GameObjectCommand& operator=(GameObjectCommand&& rhs) = delete;
 
-		void HandleEvent(GameObjectEvent) override;
-		void OnSubjectDestroy() override;
-
-	protected:
 		GameObject* GetGameObject() const { return m_pGameObject; }
+	
 	private:
 		GameObject* m_pGameObject;
 		bool m_ObserverRemoved{ false };

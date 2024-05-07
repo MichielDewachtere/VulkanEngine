@@ -150,6 +150,14 @@ std::vector<real::GamePad*> real::InputManager::GetGamePads() const
 	return v;
 }
 
+void real::InputManager::RemoveGameObjectCommands(const GameObject* pGo)
+{
+	for (const auto& map : m_pInputMaps | std::views::values)
+	{
+		map->RemoveAction(pGo);
+	}
+}
+
 void real::InputManager::UpdateKeyboardStates() const
 {
 	// TODO: Faster than SDL_PollEvent??

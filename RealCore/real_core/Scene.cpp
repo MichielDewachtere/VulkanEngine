@@ -16,9 +16,9 @@ Scene::Scene(std::string name, std::string inputMapName)
 
 Scene::~Scene() = default;
 
-GameObject& Scene::CreateGameObject(std::string tag)
+GameObject& Scene::CreateGameObject(TransformInfo info, std::string tag)
 {
-	auto pGameObject = std::make_unique<GameObject>(this, std::move(tag));
+	auto pGameObject = std::make_unique<GameObject>(this, info, std::move(tag));
 	m_GameObjects.emplace_back(std::move(pGameObject));
 	return *m_GameObjects.back();
 }
@@ -90,7 +90,6 @@ std::vector<GameObject*> Scene::FindGameObjectsWithTag(std::string tag) const
 	}
 
 	return v;
-
 }
 
 void Scene::Remove(GameObject* pGo)

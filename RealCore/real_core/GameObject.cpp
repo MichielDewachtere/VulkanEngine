@@ -3,20 +3,21 @@
 #include "DrawableComponent.h"
 #include "GameTime.h"
 #include "imgui.h"
+#include "InputManager.h"
 #include "Logger.h"
 #include "SceneManager.h"
 
-real::GameObject::GameObject(Scene* scene, std::string tag)
+real::GameObject::GameObject(Scene* scene, TransformInfo info, std::string tag)
 	: m_Tag(std::move(tag))
 	, m_pScene(scene)
 {
 	m_Id = m_IdCounter++;
-	m_pTransform = std::make_unique<Transform>(this);
+	m_pTransform = std::make_unique<Transform>(this, info);
 }
 
-real::GameObject& real::GameObject::CreateGameObject(std::string tag)
+real::GameObject& real::GameObject::CreateGameObject(TransformInfo info, std::string tag)
 {
-	m_pChildrenToAdd.push_back(std::make_unique<GameObject>(m_pScene, std::move(tag)));
+	m_pChildrenToAdd.push_back(std::make_unique<GameObject>(m_pScene, info, std::move(tag)));
 	m_pChildrenToAdd.back()->m_pParent = this;
 	m_pChildrenToAdd.back()->m_pScene = m_pScene;
 
@@ -25,9 +26,6 @@ real::GameObject& real::GameObject::CreateGameObject(std::string tag)
 
 void real::GameObject::Start()
 {
-	if (IsActive() == false)
-		return;
-
 	m_pTransform->Start();
 	std::ranges::for_each(m_pComponents, [](const std::unique_ptr<Component>& c)
 		{
@@ -79,17 +77,6 @@ void real::GameObject::Update()
 	if (IsActive() == false)
 		return;
 
-	if (m_pChildrenToAdd.empty() == false)
-	{
-		for (auto& pChild : m_pChildrenToAdd)
-		{
-			m_pChildren.push_back(std::move(pChild));
-			m_pChildren.back()->Start();
-		}
-
-		m_pChildrenToAdd.clear();
-	}
-
 	m_pTransform->Update();
 	std::ranges::for_each(m_pComponents, [](const std::unique_ptr<Component>& c)
 		{
@@ -108,6 +95,9 @@ void real::GameObject::Update()
 
 void real::GameObject::LateUpdate()
 {
+	MoveUniqueData(m_pChildrenToAdd, m_pChildren);
+	MoveUniqueData(m_pComponentsToAdd, m_pComponents);
+
 	if (m_TimeForDestruction > 0)
 	{
 		m_TimeForDestruction -= GameTime::GetInstance().GetElapsed();
@@ -238,6 +228,7 @@ void real::GameObject::OnGui()
 void real::GameObject::Destroy()
 {
 	gameObjectDestroyed.Notify(GameObjectEvent::destroyed);
+	InputManager::GetInstance().RemoveGameObjectCommands(this);
 
 	std::ranges::for_each(m_pChildren, [](const auto& go)
 		{
@@ -358,11 +349,24 @@ std::vector<real::GameObject*> real::GameObject::GetChildren() const
 
 real::GameObject* real::GameObject::GetChildAt(uint32_t index) const
 {
-	return m_pChildren[index].get();
+	if (index < m_pChildren.size())
+		return m_pChildren[index].get();
+
+	if (index < m_pChildrenToAdd.size() + m_pChildren.size())
+		return m_pChildrenToAdd[index + m_pChildren.size()].get();
+
+	return nullptr;
 }
 
 real::GameObject* real::GameObject::GetChild(uint32_t id) const
 {
+	for (const auto& child : m_pChildrenToAdd)
+	{
+		if (child->GetId() == id)
+			return child.get();
+
+	}
+
 	for (const auto& child : m_pChildren)
 	{
 		if (child->GetId() == id)
@@ -389,9 +393,22 @@ std::vector<real::GameObject*> real::GameObject::GetGameObjectsWithTag(const std
 {
 	std::vector<GameObject*> v;
 
-	if (m_pChildren.empty() == false)
+	auto c = GetGameObjectsWithTagHelper(m_pChildren, tag);
+	v.insert(v.end(), c.begin(), c.end());
+	c = GetGameObjectsWithTagHelper(m_pChildrenToAdd, tag);
+	v.insert(v.end(), c.begin(), c.end());
+
+	return v;
+}
+
+std::vector<real::GameObject*> real::GameObject::GetGameObjectsWithTagHelper(
+	const std::vector<std::unique_ptr<GameObject>>& objects, const std::string& tag)
+{
+	std::vector<GameObject*> v;
+
+	if (objects.empty() == false)
 	{
-		for (const auto& go : m_pChildren)
+		for (const auto& go : objects)
 		{
 			//if (go->IsMarkedForDestroy())
 			//	continue;

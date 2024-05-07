@@ -14,6 +14,9 @@ namespace real
 	class Scene;
 	class Texture2D;
 
+	template<typename T>
+	concept component_type = std::is_base_of_v<Component, T>;
+
 	enum class GameObjectEvent : char
 	{
 		destroyed = 0
@@ -22,7 +25,7 @@ namespace real
 	class GameObject final
 	{
 	public:
-		explicit GameObject(Scene * scene, std::string tag = "none");
+		explicit GameObject(Scene* scene, TransformInfo info = {}, std::string tag = "none");
 		~GameObject() = default;
 
 		GameObject(const GameObject& other) = delete;
@@ -30,7 +33,7 @@ namespace real
 		GameObject(GameObject&& other) = delete;
 		GameObject& operator=(GameObject&& other) = delete;
 
-		GameObject& CreateGameObject(std::string tag = "");
+		GameObject& CreateGameObject(TransformInfo info = {}, std::string tag = "");
 		uint32_t GetId() const { return m_Id; }
 
 		void Start();
@@ -65,7 +68,7 @@ namespace real
 		* @param args Additional arguments forwarded to the component constructor.
 		* @return Pointer to the added component.
 		*/
-		template<typename T, typename... Args>
+		template<component_type T, typename... Args>
 		// TODO: ask this
 		// requires std::is_base_of_v<Component, T>
 		T* AddComponent(Args... args);
@@ -74,27 +77,25 @@ namespace real
 		* @tparam T Type of the component to retrieve.
 		* @return Pointer to the requested component, or nullptr if not found.
 		*/
-		template<typename T>
+		template<component_type T>
 		T* GetComponent();
-		template<typename T>
-			requires std::is_base_of_v<Component, T>
+		template<component_type T>
 		T* GetComponentInChildren();
-		template<typename T>
-			requires std::is_base_of_v<Component, T>
+		template<component_type T>
 		std::vector<T*> GetComponentsInChildren();
 		/**
 		 * @brief Removes a component from the GameObject.
 		 * @tparam T Type of the component to remove.
 		 * @return True if the component was removed successfully, false otherwise.
 		 */
-		template<typename T>
+		template<component_type T>
 		bool RemoveComponent();
 		/**
 		 * @brief Checks if the GameObject has a specific component.
 		 * @tparam T Type of the component to check.
 		 * @return True if the GameObject has the component, false otherwise.
 		 */
-		template<typename T>
+		template<component_type T>
 		bool HasComponent() const;
 #pragma endregion
 #pragma region Parent Logic
@@ -119,21 +120,29 @@ namespace real
 
 		std::unique_ptr<Transform> m_pTransform{ nullptr };
 		std::vector<std::unique_ptr<Component>> m_pComponents{};
+		std::vector<std::unique_ptr<Component>> m_pComponentsToAdd{};
 
 		GameObject* m_pParent{ nullptr };
 		std::vector<std::unique_ptr<GameObject>> m_pChildren{};
 		std::vector<std::unique_ptr<GameObject>> m_pChildrenToAdd{};
 
 #pragma region Component Logic
-		template<typename T>
+		template<component_type T>
 		bool IsTransform() const { return std::is_same_v<T, Transform>; }
+		template<component_type T>
+		T* GetComponentHelper(const std::vector<std::unique_ptr<Component>>& v);
 #pragma endregion Component Logic
+
+		static std::vector<GameObject*> GetGameObjectsWithTagHelper(const std::vector<std::unique_ptr<GameObject>>& objects, const std::string& tag);
+
+		template <typename T>
+		void MoveUniqueData(std::vector<std::unique_ptr<T>>& from, std::vector<std::unique_ptr<T>>& to);
 
 		static inline uint32_t m_IdCounter = 0;
 	};
 
 	// TODO: use concepts or smthn, so i dont have to check if it is a concept in code
-	template <typename T, typename ... Args>
+	template <component_type T, typename ... Args>
 	T* GameObject::AddComponent(Args... args)
 	{
 		if (HasComponent<T>())
@@ -144,36 +153,26 @@ namespace real
 
 		std::unique_ptr<T> pComponent = std::make_unique<T>(this, std::forward<Args>(args)...);
 		T* rawPtr = pComponent.get();
-		m_pComponents.emplace_back(std::move(pComponent));
+		m_pComponentsToAdd.emplace_back(std::move(pComponent));
 
 		return rawPtr;
 	}
 
-	template <typename T>
+	template <component_type T>
 	T* GameObject::GetComponent()
 	{
 		if (IsTransform<T>())
 			return dynamic_cast<T*>(m_pTransform.get());
 
-		const auto it = std::find_if(m_pComponents.begin(), m_pComponents.end(), [](const auto& c)
-			{
-				if (c == nullptr)
-					return false;
-
-				return dynamic_cast<T*>(c.get()) != nullptr;
-			});
-
-		if (it != m_pComponents.end())
-		{
-			return dynamic_cast<T*>(it->get());
-		}
+		auto c = GetComponentHelper<T>(m_pComponents);
+		if (c == nullptr)
+			return GetComponentHelper<T>(m_pComponentsToAdd);
 
 		//Logger::LogError({"This game object has no component of this type"});
-		return nullptr;
+		return c;
 	}
 
-	template <typename T>
-		requires std::is_base_of_v<Component, T>
+	template <component_type T>
 	T* GameObject::GetComponentInChildren()
 	{
 		if (m_pChildren.empty() && m_pChildrenToAdd.empty())
@@ -182,15 +181,16 @@ namespace real
 		std::ranges::for_each(m_pChildren, [](const std::unique_ptr<GameObject>& go)
 			{
 				if (const auto component = go->GetComponent<T>();
-					component == nullptr)
+					component != nullptr)
 					return component;
+
+				return nullptr;
 			});
 
 		return nullptr;
 	}
 
-	template <typename T>
-		requires std::is_base_of_v<Component, T>
+	template <component_type T>
 	std::vector<T*> GameObject::GetComponentsInChildren()
 	{
 		std::vector<T*> v;
@@ -216,7 +216,7 @@ namespace real
 		return v;
 	}
 
-	template <typename T>
+	template <component_type T>
 	// TODO: Improve this, use mark for destroy on commands
 	bool GameObject::RemoveComponent()
 	{
@@ -241,15 +241,9 @@ namespace real
 		return false;
 	}
 
-	template <typename T>
+	template <component_type T>
 	bool GameObject::HasComponent() const
 	{
-		if constexpr (std::is_base_of_v<Component, T> == false)
-		{
-			Logger::LogError({ "T must derive from Component" });
-			return false;
-		}
-
 		if (m_pComponents.empty())
 			return false;
 
@@ -269,6 +263,43 @@ namespace real
 		}
 
 		return true;
+	}
+
+	template <component_type T>
+	T* GameObject::GetComponentHelper(const std::vector<std::unique_ptr<Component>>& v)
+	{
+		if (v.empty())
+			return nullptr;
+
+		const auto it = std::find_if(v.begin(), v.end(), [](const auto& c)
+			{
+				if (c == nullptr)
+					return false;
+
+				return dynamic_cast<T*>(c.get()) != nullptr;
+			});
+
+		if (it != v.end())
+		{
+			return dynamic_cast<T*>(it->get());
+		}
+
+		return nullptr;
+	}
+
+	template <typename T>
+	void GameObject::MoveUniqueData(std::vector<std::unique_ptr<T>>& from, std::vector<std::unique_ptr<T>>& to)
+	{
+		if (!from.empty())
+		{
+			for (auto& pComponent : from)
+			{
+				to.push_back(std::move(pComponent));
+				to.back()->Start();
+			}
+
+			from.clear();
+		}
 	}
 
 	//template <typename T>
