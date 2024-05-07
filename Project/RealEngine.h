@@ -6,7 +6,6 @@
 #include <iostream>
 #include <vulkan/vulkan_core.h>
 
-#include "Mesh/MeshIndexed.h"
 #include "Util/Structs.h"
 
 class Renderer;
@@ -15,7 +14,7 @@ class SwapChain;
 class RealEngine final
 {
 public:
-	explicit RealEngine() = default;
+	explicit RealEngine();
 	~RealEngine() = default;
 
 	RealEngine(const RealEngine&) = delete;
@@ -23,22 +22,16 @@ public:
 	RealEngine(RealEngine&&) = delete;
 	RealEngine operator=(RealEngine&&) = delete;
 
-	void Run();
+	void Run(const std::function<void(const GameContext&)>& load);
+
+	static GameContext GetGameContext() { return m_GameContext; }
 
 private:
-	GameContext m_GameContext{};
+	static inline GameContext m_GameContext{};
 
 	VkInstance m_Instance{ nullptr };
 	VkDebugUtilsMessengerEXT m_DebugMessenger{ nullptr };
-
-	uint8_t m_pPosCol2D, m_pPosColNorm;
-	Mesh<PosCol2D>* m_pTriangle{ nullptr };
-	MeshIndexed<PosCol2D>* m_pRectangle{ nullptr };
-
-	MeshIndexed<PosColNorm>* m_pColoredCube{ nullptr };
-	MeshIndexed<PosColNorm>* m_pColoredPyramid{ nullptr };
-	MeshIndexed<PosTexNorm>* m_pTexturedCube{ nullptr };
-	MeshIndexed<PosTexNorm>* m_pModel{ nullptr };
+	VkDescriptorPool m_ImGuiDescriptorPool{ nullptr };
 
 	const std::vector<const char*> m_ValidationLayers =
 	{
@@ -55,8 +48,7 @@ private:
 	void InitSDLImage();
 	void InitVulkan();
 	void InitRenderer();
-	//void InitImGui();
-	void InitGame();
+	void InitImGui();
 
 	void MainLoop();
 	void CleanUp();
