@@ -64,7 +64,7 @@ public:
 		// DrawScene();
 		for (const auto& m : m_pMeshes)
 		{
-			m->Update(currentFrame, commandBuffer, m_pPipeline->GetPipelineLayout());
+			m->UpdateUbo(currentFrame, commandBuffer, m_pPipeline->GetPipelineLayout());
 			m->Draw(commandBuffer);
 		}
 	}
