@@ -42,13 +42,29 @@ else()
     message(STATUS "RealCore is not included")
 endif()
 
+set(REAL3D_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/Real3D")
+message(STATUS "About to fetch real 3D from ${REAL3D_SOURCE_DIR}")
+FetchContent_Declare(
+    Real3D
+    SOURCE_DIR ${REAL3D_SOURCE_DIR}
+)
+
+FetchContent_MakeAvailable(Real3D)
+
+# Test if the library target exists
+if(TARGET Real3D)
+    message(STATUS "Real3D is included")
+else()
+    message(STATUS "Real3D is not included")
+endif()
+
 # Find the required packages
 find_package(Vulkan REQUIRED)
 
 # Include Directories
 include_directories(${Vulkan_INCLUDE_DIRS})
 
-add_subdirectory(Project)
+add_subdirectory(RealMinecraft)
 
 # If using validation layers, copy the required JSON files (optional)
 # add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
