@@ -2,6 +2,7 @@
 #define INPUTMAP_H
 
 #include <map>
+#include <SDL_mouse.h>
 #include <string>
 #include <vector>
 #include <stdexcept>
@@ -27,14 +28,19 @@ namespace real
 		void AddKeyboardAction(uint8_t id, KeyState event, uint32_t scancode, CommandArgs... commandArgs);
 		template <class CommandType, typename... CommandArgs>
 			requires std::is_base_of_v<Command, CommandType>
+		void AddMouseAction(uint8_t id, KeyState event, MouseButton button, CommandArgs... commandArgs);
+		template <class CommandType, typename... CommandArgs>
+			requires std::is_base_of_v<Command, CommandType>
 		void AddGamePadAction(uint8_t controllerId, uint8_t id, KeyState inputType, GamePad::Button button, CommandArgs... commandArgs);
 
 		void RemoveKeyboardAction(uint8_t id);
+		void RemoveMouseAction(uint8_t id);
 		void RemoveGamePadAction(uint8_t id, int controllerId);
 
 		void RemoveAction(const GameObject* pGameObject);
 
 		const std::map<uint8_t, std::unique_ptr<KeyboardAction>>& GetKeyboardActions();
+		const std::map<uint8_t, std::unique_ptr<MouseAction>>& GetMouseActions();
 		const std::map<uint8_t, std::map<uint8_t, std::unique_ptr<ControllerAction>>>& GetGamePadActions();
 
 	private:
@@ -42,9 +48,13 @@ namespace real
 
 		//			id					action
 		std::map<uint8_t, std::unique_ptr<KeyboardAction>> m_pKeyboardActions{};
+		//			id					action
+		std::map<uint8_t, std::unique_ptr<MouseAction>> m_pMouseActions{};
 		//		controllerId		id					action
 		std::map<uint8_t, std::map<uint8_t, std::unique_ptr<ControllerAction>>> m_pControllerActions{};
+
 		std::vector<uint8_t> m_KeyboardActionsToRemove;
+		std::vector<uint8_t> m_MouseActionsToRemove;
 		std::map<uint8_t, std::vector<uint8_t>> m_GamePadActionsToRemove;
 
 		static bool IsKeyCodeValid(int code);
@@ -63,6 +73,12 @@ namespace real
 		m_pKeyboardActions[id] = std::make_unique<KeyboardAction>(event, scancode, new CommandType(id, -1, commandArgs...));
 
 		//m_pKeyboardActions.try_emplace(id, std::make_unique<KeyboardAction>(event, scancode, new CommandType(commandArgs...)));
+	}
+
+	template <class CommandType, typename ... CommandArgs> requires std::is_base_of_v<Command, CommandType>
+	void InputMap::AddMouseAction(uint8_t id, KeyState event, MouseButton button, CommandArgs... commandArgs)
+	{
+		m_pMouseActions[id] = std::make_unique<MouseAction>(event, button, new CommandType(id, -1, commandArgs...));
 	}
 
 	template <class CommandType, typename ... CommandArgs>

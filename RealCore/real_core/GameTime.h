@@ -27,6 +27,8 @@ namespace real
 		float GetFPS_Float() const { return m_fFPS; }
 
 		[[nodiscard]] uint32_t StartTimer();
+
+		template<typename DurationType = std::chrono::milliseconds>
 		float EndTimer(uint32_t id);
 
 	private:
@@ -43,5 +45,19 @@ namespace real
 
 	};
 }
+
+template<typename DurationType>
+float real::GameTime::EndTimer(uint32_t id)
+{
+	const auto endTime = std::chrono::high_resolution_clock::now();
+	const auto duration = endTime - m_Timers[id];
+
+	const auto milliseconds = std::chrono::duration_cast<DurationType>(duration).count();
+
+	m_Timers.erase(m_Timers.begin() + id);
+
+	return static_cast<float>(milliseconds);
+}
+
 
 #endif // REALGAMETIME_H

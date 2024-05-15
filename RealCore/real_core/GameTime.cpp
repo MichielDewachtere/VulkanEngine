@@ -42,17 +42,3 @@ uint32_t real::GameTime::StartTimer()
 	m_Timers.push_back(std::chrono::high_resolution_clock::now());
 	return static_cast<uint32_t>(id);
 }
-
-float real::GameTime::EndTimer(uint32_t id)
-{
-	const auto endTime = std::chrono::high_resolution_clock::now();
-	const auto duration = endTime - m_Timers[id];
-
-	// Convert duration to milliseconds
-	const auto milliseconds = std::chrono::duration_cast<std::chrono::milliseconds>(duration).count();
-
-	// Remove the timer from the vector
-	m_Timers.erase(m_Timers.begin() + id);
-
-	return static_cast<float>(milliseconds);
-}

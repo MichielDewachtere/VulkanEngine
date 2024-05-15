@@ -15,6 +15,13 @@ namespace real
 		keyPressed = 2
 	};
 
+	enum class MouseButton : char
+	{
+		left = 1,
+		middle = 2,
+		right = 3
+	};
+
 	struct KeyboardAction
 	{
 		KeyState event;
@@ -23,6 +30,16 @@ namespace real
 
 		KeyboardAction(KeyState event, uint32_t scancode, Command* command)
 			: event(event), scancode(scancode), pCommand(command) {}
+	};
+
+	struct MouseAction
+	{
+		KeyState event;
+		MouseButton button;
+		std::unique_ptr<Command> pCommand;
+
+		MouseAction(KeyState event, MouseButton button, Command* command)
+			: event(event), button(button), pCommand(command) {}
 	};
 
 	struct ControllerAction

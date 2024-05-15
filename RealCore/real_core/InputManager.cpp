@@ -10,24 +10,19 @@
 #include <SDL_events.h>
 #include <Xinput.h>
 
+#include "EngineBase.h"
 #include "imgui_impl_sdl2.h"
 #include "Logger.h"
+#include "glm/geometric.hpp"
 
-real::InputManager::InputManager()
-{
-	m_pOldKeyboardState = new BYTE[SDL_NUM_SCANCODES];
-	m_pCurrentKeyboardState = new BYTE[SDL_NUM_SCANCODES];
-}
-
-real::InputManager::~InputManager()
-{
-	delete[] m_pOldKeyboardState;
-	delete[] m_pCurrentKeyboardState;
-}
+real::InputManager::InputManager() = default;
+real::InputManager::~InputManager() = default;
 
 bool real::InputManager::ProcessInput()
 {
 	SDL_Event e;
+
+
 	while (SDL_PollEvent(&e))
 	{
 		ImGui_ImplSDL2_ProcessEvent(&e);
@@ -35,12 +30,6 @@ bool real::InputManager::ProcessInput()
 		{
 			return false;
 		}
-
-		//if (e.type == SDL_MOUSEBUTTONDOWN
-		//	|| e.type == SDL_MOUSEBUTTONUP)
-		//{
-		//	// Mouse events
-		//}
 	}
 
 	if (m_pActiveInputMap == nullptr)
@@ -54,6 +43,11 @@ bool real::InputManager::ProcessInput()
 			});
 
 		ProcessGamePadInput();
+	}
+
+	if (m_MouseEnabled)
+	{
+		ProcessMouseInput();
 	}
 
 	if (m_KeyboardEnabled)
@@ -158,19 +152,61 @@ void real::InputManager::RemoveGameObjectCommands(const GameObject* pGo)
 	}
 }
 
-void real::InputManager::UpdateKeyboardStates() const
+void real::InputManager::UpdateKeyboardStates()
 {
 	// TODO: Faster than SDL_PollEvent??
-	std::copy(m_pCurrentKeyboardState, m_pCurrentKeyboardState + SDL_NUM_SCANCODES, m_pOldKeyboardState);
+	std::ranges::copy(m_pCurrentKeyboardState, m_pOldKeyboardState.begin());
 	const Uint8* currentState = SDL_GetKeyboardState(nullptr);
-	std::copy(currentState, currentState + SDL_NUM_SCANCODES, m_pCurrentKeyboardState);
+	std::copy(currentState, currentState + SDL_NUM_SCANCODES, m_pCurrentKeyboardState.begin());
 }
+
+void real::InputManager::UpdateMouseStates()
+{
+	m_OldMouseState = m_CurrentMouseState;
+	m_OldMousePosition = m_CurrentMousePosition;
+
+	// SDL_GetMouseState gets the current mouse position and button states
+	int mouseX, mouseY;
+	m_CurrentMouseState = SDL_GetMouseState(&mouseX, &mouseY);
+
+	m_CurrentMousePosition.x = mouseX;
+	m_CurrentMousePosition.y = mouseY;
+
+	// Check if mouse pos is in window
+	SDL_Point clientPos;
+	clientPos.x = mouseX;
+	clientPos.y = mouseY;
+
+	const auto rect = SDL_GetWindowMouseRect(EngineBase::GetWindow());
+	if (rect != nullptr && SDL_PointInRect(&clientPos, rect) == SDL_FALSE)
+	{
+		m_CurrentMousePosition = m_OldMousePosition;
+		m_CurrentMouseState = m_OldMouseState;
+	}
+
+	m_MouseMovement.x = m_CurrentMousePosition.x - m_OldMousePosition.x;
+	m_MouseMovement.y = m_CurrentMousePosition.y - m_OldMousePosition.y;
+
+	if (m_MouseMovement == glm::ivec2{ 0,0 })
+		m_NormalizedMouseMovement = glm::vec2{ 0,0 };
+	else
+		m_NormalizedMouseMovement = glm::normalize(glm::vec2(m_MouseMovement));
+}
+
 bool real::InputManager::IsKeyboardKeyDown(int key, bool previousFrame) const
 {
 	if (previousFrame)
 		return m_pOldKeyboardState[key];
 
 	return m_pCurrentKeyboardState[key];
+}
+
+bool real::InputManager::IsMouseButtonDown(MouseButton button, bool previousFrame) const
+{
+	if (previousFrame)
+		return m_OldMouseState & SDL_BUTTON(static_cast<int>(button));
+
+	return m_CurrentMouseState & SDL_BUTTON(static_cast<int>(button));
 }
 
 std::vector<uint8_t> real::InputManager::RegisterGamePadsHelper(bool one)
@@ -204,7 +240,7 @@ std::vector<uint8_t> real::InputManager::RegisterGamePadsHelper(bool one)
 	return controllers;
 }
 
-void real::InputManager::ProcessKeyboardInput() const
+void real::InputManager::ProcessKeyboardInput()
 {
 	UpdateKeyboardStates();
 
@@ -232,11 +268,39 @@ void real::InputManager::ProcessKeyboardInput() const
 	}
 }
 
+void real::InputManager::ProcessMouseInput()
+{
+	UpdateMouseStates();
+
+	for (const auto& action : m_pActiveInputMap->GetMouseActions() | std::views::values)
+	{
+		bool executeCommand = false;
+
+		switch (action->event)
+		{
+		case KeyState::keyDown:
+			executeCommand = !IsMouseButtonDown(action->button, true) && IsMouseButtonDown(action->button, false);
+			break;
+		case KeyState::keyUp:
+			executeCommand = IsMouseButtonDown(action->button, true) && !IsMouseButtonDown(action->button, false);
+			break;
+		case KeyState::keyPressed:
+			executeCommand = IsMouseButtonDown(action->button, true) && IsMouseButtonDown(action->button, false);
+			break;
+		default:
+			break;
+		}
+
+		if (executeCommand)
+			action->pCommand->Execute();
+	}
+}
+
 void real::InputManager::ProcessGamePadInput() const
 {
 	auto executeCommand = [this](const std::unique_ptr<GamePad>& gp)
 		{
-			if (m_pActiveInputMap->GetGamePadActions().find(gp->GetIndex()) == m_pActiveInputMap->GetGamePadActions().end())
+			if (!m_pActiveInputMap->GetGamePadActions().contains(gp->GetIndex()))
 				return;
 
 			for (const auto& action : m_pActiveInputMap->GetGamePadActions().at(gp->GetIndex()) | std::views::values)

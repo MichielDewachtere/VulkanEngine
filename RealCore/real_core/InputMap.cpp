@@ -10,10 +10,14 @@ real::InputMap::InputMap(std::string name)
 {
 }
 
-// TODO: Remove by passing game object?
 void real::InputMap::RemoveKeyboardAction(uint8_t id)
 {
 	m_KeyboardActionsToRemove.push_back(id);
+}
+
+void real::InputMap::RemoveMouseAction(uint8_t id)
+{
+	m_MouseActionsToRemove.push_back(id);
 }
 
 void real::InputMap::RemoveGamePadAction(uint8_t id, int controllerId)
@@ -39,6 +43,18 @@ void real::InputMap::RemoveAction(const GameObject* pGameObject)
 			if (command->GetGameObject()->GetId() == pGameObject->GetId())
 			{
 				m_KeyboardActionsToRemove.push_back(id);
+			}
+		}
+	}
+
+	for (const auto& [id, action] : m_pMouseActions)
+	{
+		if (const auto command = dynamic_cast<GameObjectCommand*>(action->pCommand.get());
+			command != nullptr)
+		{
+			if (command->GetGameObject()->GetId() == pGameObject->GetId())
+			{
+				m_MouseActionsToRemove.push_back(id);
 			}
 		}
 	}
@@ -72,6 +88,21 @@ const std::map<uint8_t, std::unique_ptr<real::KeyboardAction>>& real::InputMap::
 	}
 
 	return m_pKeyboardActions;
+}
+
+const std::map<uint8_t, std::unique_ptr<real::MouseAction>>& real::InputMap::GetMouseActions()
+{
+	if (m_MouseActionsToRemove.empty() == false)
+	{
+		for (const auto& id : m_MouseActionsToRemove)
+		{
+			m_pMouseActions.erase(id);
+		}
+
+		m_MouseActionsToRemove.clear();
+	}
+
+	return m_pMouseActions;
 }
 
 const std::map<uint8_t, std::map<uint8_t, std::unique_ptr<real::ControllerAction>>>& 

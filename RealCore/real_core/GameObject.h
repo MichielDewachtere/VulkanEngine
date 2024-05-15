@@ -292,13 +292,17 @@ namespace real
 	{
 		if (!from.empty())
 		{
-			for (auto& pComponent : from)
+			std::vector<std::unique_ptr<T>> tempComponents;
+			tempComponents.swap(from);
+			from.clear();
+
+			for (auto& pComponent : tempComponents)
 			{
 				to.push_back(std::move(pComponent));
 				to.back()->Start();
 			}
 
-			from.clear();
+			tempComponents.clear();
 		}
 	}
 
