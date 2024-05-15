@@ -27,8 +27,8 @@ namespace real
 		friend class Singleton<CommandPool>;
 		CommandPool() = default;
 
-		VkCommandPool m_CommandPool;
-		std::unique_ptr<CommandBuffer> m_pCommandBuffer;
+		VkCommandPool m_CommandPool{ nullptr };
+		std::unique_ptr<CommandBuffer> m_pCommandBuffer{ nullptr };
 	};
 }
 
