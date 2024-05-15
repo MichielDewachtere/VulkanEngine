@@ -38,7 +38,7 @@ namespace real
 		Renderer() = default;
 
 		uint32_t m_CurrentFrame{ 0 };
-		VkQueue m_GraphicsQueue, m_PresentQueue;
+		VkQueue m_GraphicsQueue{ nullptr }, m_PresentQueue{ nullptr };
 		std::vector<VkSemaphore> m_ImageAvailableSemaphores, m_RenderFinishedSemaphores;
 		std::vector<VkFence> m_InFlightFences;
 		SwapChain* m_pSwapChain;
