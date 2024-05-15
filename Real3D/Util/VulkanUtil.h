@@ -12,7 +12,6 @@
 
 namespace real
 {
-	// TODO: Delete this and rewrite it somewehre else
 #ifdef NDEBUG
 	const bool enableValidationLayers = false;
 #else
@@ -54,6 +53,22 @@ namespace real
 	VkImageView CreateImageView(const GameContext& context, VkImage image, VkFormat format);
 
 	std::vector<char> ReadFile(const std::string& filename);
+
+	template <typename T>
+	std::vector<T> fillUntilSize(std::vector<T>& src, std::vector<T>& dest, std::size_t targetSize)
+	{
+		// Determine the number of elements to copy
+		std::size_t numToCopy = std::min(targetSize - dest.size(), src.size());
+
+		// Copy elements to the destination vector
+		std::copy_n(src.begin(), numToCopy, std::back_inserter(dest));
+
+		// Remove the copied elements from the source vector
+		std::vector<T> leftOver(src.begin() + numToCopy, src.end());
+		src = leftOver;
+
+		return leftOver;
+	}
 }
 
 #endif // VULKANUTIL_H
