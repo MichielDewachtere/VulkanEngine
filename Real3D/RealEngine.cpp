@@ -4,6 +4,7 @@
 
 #include <SDL2/SDL_vulkan.h>
 #include <SDL_image.h>
+#include <thread>
 
 #include <real_core/GameTime.h>
 #include <real_core/InputManager.h>
@@ -13,55 +14,31 @@
 #include "Core/DepthBuffer/DepthBufferManager.h"
 #include "Graphics/ShaderManager.h"
 #include "Material/MaterialManager.h"
-#include "Misc/CameraInputManager.h"
 #include "Graphics/Renderer.h"
 #include "ImGui/imgui_impl_vulkan.h"
 
 real::RealEngine::RealEngine()
 {
-	InitWindow();
+	InitSDL();
 	InitVulkan();
 	InitRenderer();
 	InitImGui();
 }
 
-void real::RealEngine::Run(const std::function<void(const GameContext&)>& load)
+void real::RealEngine::Run(const std::function<void()>& load)
 {
-	load(m_GameContext);
+	load();
+
 	MainLoop();
 	CleanUp();
 }
 
 void real::RealEngine::InitSDL()
 {
-	InitWindow();
+	InitWindow(m_GameContext.windowTitle, m_GameContext.windowWidth, m_GameContext.windowHeight, SDL_WINDOW_VULKAN);
+	m_GameContext.pWindow = GetWindow();
+
 	InitSDLImage();
-}
-
-void real::RealEngine::InitWindow()
-{
-	if (SDL_Init(SDL_INIT_VIDEO) != 0)
-	{
-		throw std::runtime_error(std::string("SDL_Init Error: ") + SDL_GetError());
-	}
-
-	SDL_Vulkan_LoadLibrary(nullptr);
-
-	const auto pWindow = SDL_CreateWindow(
-		m_GameContext.windowTitle.c_str(),
-		SDL_WINDOWPOS_CENTERED,
-		SDL_WINDOWPOS_CENTERED,
-		static_cast<int>(m_GameContext.windowWidth),
-		static_cast<int>(m_GameContext.windowHeight),
-		SDL_WINDOW_VULKAN
-	);
-
-	if (pWindow == nullptr)
-	{
-		throw std::runtime_error(std::string("SDL_CreateWindow Error: ") + SDL_GetError());
-	}
-
-	m_GameContext.pWindow = pWindow;
 }
 
 void real::RealEngine::InitSDLImage()
@@ -147,12 +124,10 @@ void real::RealEngine::MainLoop()
 {
 	auto& time = real::GameTime::GetInstance();
 	auto& input = real::InputManager::GetInstance();
-	auto& cameraInput = CameraInputManager::GetInstance();
 	auto& renderer = Renderer::GetInstance();
 	auto& sceneManager = real::SceneManager::GetInstance();
 
 	time.Init();
-	cameraInput.Initialize(m_GameContext);
 
 	float timer = 0;
 	bool doContinue = true;
@@ -160,21 +135,26 @@ void real::RealEngine::MainLoop()
 	while (doContinue)
 	{
 		time.Update();
+		const auto currentTime = std::chrono::high_resolution_clock::now();
 
 		doContinue = input.ProcessInput();
 
 		sceneManager.Update();
 		renderer.Draw(m_GameContext);
 
-		cameraInput.UpdateInputStates(m_GameContext, true);
-
 		timer += time.GetElapsed();
-		if (constexpr float fpsPrintTime = 1; 
+		if (constexpr float fpsPrintTime = 1.f; 
 			timer >= fpsPrintTime)
 		{
 			timer = 0;
 			std::cout << "\033[1;90mFPS: " << time.GetFPS_Unsigned() << "\033[0m\n";
 		}
+
+#ifdef NDEBUG
+		auto frameDuration = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::duration<float>(m_GameContext.inputUpdateFrequency));
+		const auto sleepTime = currentTime + frameDuration - std::chrono::high_resolution_clock::now();
+		std::this_thread::sleep_for(sleepTime);
+#endif // NDEBUG
 	}
 
 	vkDeviceWaitIdle(m_GameContext.vulkanContext.device);

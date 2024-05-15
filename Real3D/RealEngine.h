@@ -6,6 +6,8 @@
 #include <iostream>
 #include <vulkan/vulkan_core.h>
 
+#include <real_core/EngineBase.h>
+
 #include "Util/Structs.h"
 
 namespace real
@@ -13,18 +15,18 @@ namespace real
 	class Renderer;
 	class SwapChain;
 
-	class RealEngine final
+	class RealEngine final : public EngineBase
 	{
 	public:
 		explicit RealEngine();
-		~RealEngine() = default;
+		virtual ~RealEngine() override = default;
 
 		RealEngine(const RealEngine&) = delete;
 		RealEngine operator=(const RealEngine&) = delete;
 		RealEngine(RealEngine&&) = delete;
 		RealEngine operator=(RealEngine&&) = delete;
 
-		void Run(const std::function<void(const GameContext&)>& load);
+		virtual void Run(const std::function<void()>& load) override;
 
 		static GameContext GetGameContext() { return m_GameContext; }
 
@@ -46,8 +48,7 @@ namespace real
 		};
 
 		void InitSDL();
-		void InitWindow();
-		void InitSDLImage();
+		static void InitSDLImage();
 		void InitVulkan();
 		void InitRenderer();
 		void InitImGui();
