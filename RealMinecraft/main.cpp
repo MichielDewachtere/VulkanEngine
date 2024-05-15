@@ -12,9 +12,12 @@
 
 #include "Scenes/TestScene.h"
 
-void Load(const real::GameContext& context)
+void Load()
 {
 	using namespace real;
+
+	const auto context = RealEngine::GetGameContext();
+
 	auto& materialManager = MaterialManager::GetInstance();
 	materialManager.AddMaterial<PosCol2DPipeline, PosCol2D>(context);
 	materialManager.AddMaterial<PosColNormPipeline, PosColNorm>(context);
@@ -28,21 +31,19 @@ void Load(const real::GameContext& context)
 
 int main(int, char* [])
 {
-	// DISABLE_LAYER_AMD_SWITCHABLE_GRAPHICS_1 = 1
-	//DISABLE_LAYER_NV_OPTIMUS_1 = 1
-	//_putenv_s("DISABLE_LAYER_AMD_SWITCHABLE_GRAPHICS_1", "1");
-	//_putenv_s("DISABLE_LAYER_NV_OPTIMUS_1", "1");
+	real::RealEngine app;
+	app.Run(Load);
 
-	try
-	{
-		real::RealEngine app;
-		app.Run(Load);
-	}
-	catch (const std::exception& e)
-	{
-		std::cerr << e.what() << std::endl;
-		return EXIT_FAILURE;
-	}
+	//try
+	//{
+	//	real::RealEngine app;
+	//	app.Run(Load);
+	//}
+	//catch (const std::exception& e)
+	//{
+	//	std::cerr << e.what() << std::endl;
+	//	return EXIT_FAILURE;
+	//}
 
 	return EXIT_SUCCESS;
 }
