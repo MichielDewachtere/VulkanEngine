@@ -1,0 +1,4 @@
+{
+  "parent": "block/cube_bottom_top",
+  "textures": [2,1,3]
+}

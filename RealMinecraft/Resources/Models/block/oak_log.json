@@ -1,0 +1,4 @@
+{
+  "parent": "block/cube_column",
+  "textures": [ 11, 10 ]
+}
