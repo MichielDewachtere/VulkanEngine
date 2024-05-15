@@ -1,17 +1,20 @@
 #include "TestScene.h"
 
-#include "RealEngine.h"
-#include "Material/MaterialManager.h"
-#include "Material/Pipelines/PosCol2DPipeline.h"
-#include "Material/Pipelines/PosColNormPipeline.h"
-#include "Material/Pipelines/PosTexNormPipeline.h"
-#include "Mesh/Mesh.h"
-#include "Mesh/MeshFactory.h"
-#include "Mesh/MeshIndexed.h"
-#include "Misc/CameraManager.h"
+#include <utility>
+
+#include <real_core/InputManager.h>
+
+#include <RealEngine.h>
+#include <Material/MaterialManager.h>
+#include <Mesh/Mesh.h>
+
+#include "Commands/MoveCommand.h"
+#include "Commands/RotateCommand.h"
+#include "Components/Chunk.h"
+#include "Util/BlockParser.h"
 
 TestScene::TestScene(std::string name, std::string inputMap)
-	: Scene(name, inputMap)
+	: Scene(std::move(name), std::move(inputMap))
 {
 }
 
@@ -19,131 +22,70 @@ void TestScene::Load()
 {
 	using namespace real;
 
-	const auto& materialManager = MaterialManager::GetInstance();
+	//const auto& materialManager = MaterialManager::GetInstance();
 	const auto context = RealEngine::GetGameContext();
 
+	//std::vector<PosTexNorm> vertices;
+	//std::vector<uint32_t> indices;
+
+	//auto v = BlockParser::GetInstance().GetFaceData(EDirection::north, EBlock::debug);
+	//vertices.insert(vertices.end(), v.begin(), v.end());
+	//indices.insert(indices.end(), { 0, 1, 2, 2, 3, 0 });
+
+	//v = BlockParser::GetInstance().GetFaceData(EDirection::east, EBlock::debug);
+	//vertices.insert(vertices.end(), v.begin(), v.end());
+	//indices.insert(indices.end(), { 4, 5, 6, 6, 7, 4 });
+
+	//v = BlockParser::GetInstance().GetFaceData(EDirection::south, EBlock::debug);
+	//vertices.insert(vertices.end(), v.begin(), v.end());
+	//indices.insert(indices.end(), { 8, 9, 10, 10, 11, 8 });
+
+	//v = BlockParser::GetInstance().GetFaceData(EDirection::west, EBlock::debug);
+	//vertices.insert(vertices.end(), v.begin(), v.end());
+	//indices.insert(indices.end(), { 12, 13, 14, 14, 15, 12 });
+
+	//v = BlockParser::GetInstance().GetFaceData(EDirection::up, EBlock::debug);
+	//vertices.insert(vertices.end(), v.begin(), v.end());
+	//indices.insert(indices.end(), { 16, 17, 18, 18, 19, 16 });
+
+	//v = BlockParser::GetInstance().GetFaceData(EDirection::down, EBlock::debug);
+	//vertices.insert(vertices.end(), v.begin(), v.end());
+	//indices.insert(indices.end(), { 20, 21, 22, 22, 23, 20 });
+
 	{
-		auto& triangle = CreateGameObject();
-		triangle.GetTransform()->SetLocalPosition({ 0.5f,0 });
+		auto& chunk = CreateGameObject();
+		chunk.GetTransform()->SetLocalPosition({ 0,0,0 });
 
-		const std::vector triangleVertices{
-			PosCol2D{ glm::vec2{0.5f + 0.0f, -0.25f},	glm::vec3{1.0f, 0.0f, 0.0f} },
-			PosCol2D{ glm::vec2{0.5f + 0.25f,  0.25f},glm::vec3{0.0f, 1.0f, 0.0f} },
-			PosCol2D{ glm::vec2{0.5f + -0.25f, 0.25f},glm::vec3{0.0f, 0.0f, 1.0f} },
-		};
-		MeshInfo info;
-		info.vertexCapacity = static_cast<uint32_t>(triangleVertices.size());
-
-		const auto mesh = triangle.AddComponent<Mesh<PosCol2D>>(info);
-		materialManager.GetMaterial<PosCol2DPipeline, PosCol2D>()->BindMesh(context, mesh);
-		mesh->AddVertices(triangleVertices);
-		mesh->Init(context);
+		chunk.AddComponent<Chunk>();
 	}
+	//{
+	//	auto& chunk = CreateGameObject();
+	//	chunk.GetTransform()->SetLocalPosition({ 8,0,0 });
+
+	//	chunk.AddComponent<Chunk>();
+	//	//mesh->AddVertices(vertices);
+	//	//mesh->AddIndices(indices);
+	//	//mesh->Init(context);
+	//}
+
+	TransformInfo info;
+	info.position = { 8,65,8 };
+	auto& camera = CreateGameObject(info);
 	{
-		auto& rectangle = CreateGameObject();
-		rectangle.GetTransform()->SetLocalPosition({ 0.5f,0 });
-
-		const std::vector vertices = {
-			PosCol2D{ glm::vec2{-0.5 + -0.25, -0.25},	glm::vec3{1,0,0} },
-			PosCol2D{ glm::vec2{-0.5 + 0.25,  -0.25},	glm::vec3{0,1,0} },
-			PosCol2D{ glm::vec2{-0.5 + 0.25,   0.25},	glm::vec3{0,0,1} },
-			PosCol2D{ glm::vec2{-0.5 + -0.25,  0.25},	glm::vec3{1,1,1} },
-		};
-		const std::vector<uint32_t> indices =
-		{
-			0, 1, 2, 2, 3, 0
-		};
-
-		MeshInfo info;
-		info.indexCapacity = static_cast<uint32_t>(indices.size());
-		info.vertexCapacity = static_cast<uint32_t>(vertices.size());
-
-		const auto mesh = rectangle.AddComponent<MeshIndexed<PosCol2D>>(info);
-		materialManager.GetMaterial<PosCol2DPipeline, PosCol2D>()->BindMesh(context, mesh);
-		mesh->AddVertices(vertices);
-		mesh->AddIndices(indices);
-		mesh->Init(context);
-	}
-
-	{
-		auto& coloredCube = CreateGameObject();
-		coloredCube.GetTransform()->SetLocalPosition({ -1,0,0 });
-
-		auto [indices, vertices] = MeshFactory::CreateCube({ 0,0,0 }, 1);
-		MeshInfo info;
-		info.indexCapacity = static_cast<uint32_t>(indices.size());
-		info.vertexCapacity = static_cast<uint32_t>(vertices.size());
-		info.usesUbo = true;
-
-		const auto mesh = coloredCube.AddComponent<MeshIndexed<PosColNorm>>(info);
-		materialManager.GetMaterial<PosColNormPipeline, PosColNorm>()->BindMesh(context, mesh);
-		mesh->AddVertices(vertices);
-		mesh->AddIndices(indices);
-		mesh->Init(context);
-	}
-
-	{
-		auto& coloredPyramid = CreateGameObject();
-		coloredPyramid.GetTransform()->SetLocalPosition({ -3,0,0 });
-
-		auto [indices, vertices] = MeshFactory::CreatePyramid({ 0,0,0 }, 1, 1);
-		MeshInfo info;
-		info.indexCapacity = static_cast<uint32_t>(indices.size());
-		info.vertexCapacity = static_cast<uint32_t>(vertices.size());
-		info.usesUbo = true;
-
-		const auto mesh = coloredPyramid.AddComponent<MeshIndexed<PosColNorm>>(info);
-		materialManager.GetMaterial<PosColNormPipeline, PosColNorm>()->BindMesh(context, mesh);
-		mesh->AddVertices(vertices);
-		mesh->AddIndices(indices);
-		mesh->Init(context);
-	}
-
-	{
-		auto& texturedCube = CreateGameObject();
-		texturedCube.GetTransform()->SetLocalPosition({ 1,0,0 });
-
-		auto [indices, vertices] = MeshFactory::CreateCubeMap({ 0,0,0 }, 1);
-		MeshInfo info;
-		info.indexCapacity = static_cast<uint32_t>(indices.size());
-		info.vertexCapacity = static_cast<uint32_t>(vertices.size());
-		info.usesUbo = true;
-		info.texture = ContentManager::GetInstance().LoadTexture(context, "Resources/textures/grass_side.png");
-
-		const auto mesh = texturedCube.AddComponent<MeshIndexed<PosTexNorm>>(info);
-		materialManager.GetMaterial<PosTexNormPipeline, PosTexNorm>()->BindMesh(context, mesh);
-		mesh->AddVertices(vertices);
-		mesh->AddIndices(indices);
-		mesh->Init(context);
-	}
-
-	{
-		auto& model = CreateGameObject();
-		model.GetTransform()->SetLocalPosition({ 3,0,0 });
-		model.GetTransform()->SetPitch(270);
-		model.GetTransform()->SetRoll(270);
-
-		const auto loadedModel = ContentManager::GetInstance().LoadModel("Resources/Models/viking_room.obj", { 0,0,0 });
-		const auto indices = loadedModel->GetIndices();
-		const auto vertices = loadedModel->GetVertices();
-		MeshInfo info;
-		info.indexCapacity = static_cast<uint32_t>(indices.size());
-		info.vertexCapacity = static_cast<uint32_t>(vertices.size());
-		info.usesUbo = true;
-		info.texture = ContentManager::GetInstance().LoadTexture(context, "Resources/textures/viking_room.png");
-
-		const auto mesh = model.AddComponent<MeshIndexed<PosTexNorm>>(info);
-		materialManager.GetMaterial<PosTexNormPipeline, PosTexNorm>()->BindMesh(context, mesh);
-		mesh->AddVertices(vertices);
-		mesh->AddIndices(indices);
-		mesh->Init(context);
-	}
-
-	{
-		TransformInfo info;
-		info.position = { 0,0,2 };
-		auto& camera = CreateGameObject(info);
-		auto comp = camera.AddComponent<Camera>();
+		const auto comp = camera.AddComponent<Camera>();
 		CameraManager::GetInstance().AddCamera(comp, true);
+	}
+
+	{
+		auto& input = real::InputManager::GetInstance();
+		const auto map = input.AddInputMap("test", true);
+		map->AddKeyboardAction<MoveCommand>(0, KeyState::keyPressed, SDL_SCANCODE_A, &camera, glm::ivec3{ -1,0,0 });
+		map->AddKeyboardAction<MoveCommand>(1, KeyState::keyPressed, SDL_SCANCODE_D, &camera, glm::ivec3{ 1,0,0 });
+		map->AddKeyboardAction<MoveCommand>(2, KeyState::keyPressed, SDL_SCANCODE_LSHIFT, &camera, glm::ivec3{ 0,-1,0 });
+		map->AddKeyboardAction<MoveCommand>(3, KeyState::keyPressed, SDL_SCANCODE_SPACE, &camera, glm::ivec3{ 0,1,0 });
+		map->AddKeyboardAction<MoveCommand>(4, KeyState::keyPressed, SDL_SCANCODE_S, &camera, glm::ivec3{ 0,0,1 });
+		map->AddKeyboardAction<MoveCommand>(5, KeyState::keyPressed, SDL_SCANCODE_W, &camera, glm::ivec3{ 0,0,-1 });
+
+		map->AddMouseAction<RotateCommand>(6, KeyState::keyPressed, MouseButton::left, &camera);
 	}
 }
