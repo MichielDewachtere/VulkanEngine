@@ -32,7 +32,19 @@ set(SOURCES
     
     "Scenes/TestScene.cpp" 
     "Scenes/TestScene.h" 
-)
+ 
+    "Commands/MoveCommand.cpp"
+    "Commands/MoveCommand.h"
+    "Commands/RotateCommand.h" 
+    "Commands/RotateCommand.cpp" 
+
+    "Util/BlockParser.h" 
+    "Util/BlockParser.cpp" 
+    "Util/Enumerations.h" 
+    "Util/BlockModel.h" 
+    "Util/GameUtils.h"
+    "Util/bimap.hpp"
+ "Components/Chunk.cpp" "Util/Macros.h")
 
 add_executable(${PROJECT_NAME} ${SOURCES} ${GLSL_SOURCE_FILES})
 
@@ -53,4 +65,4 @@ add_dependencies(${PROJECT_NAME} Shaders)
 # Link libraries
 target_include_directories(${PROJECT_NAME} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 target_include_directories(${PROJECT_NAME} PRIVATE SDL2::SDL2 SDL2::SDL2main SDL2_image RealCore Real3D)
-target_link_libraries(${PROJECT_NAME} PRIVATE ${Vulkan_LIBRARIES} SDL2::SDL2 SDL2::SDL2main SDL2_image RealCore Real3D)
+target_link_libraries(${PROJECT_NAME} PRIVATE ${Vulkan_LIBRARIES} SDL2::SDL2 SDL2::SDL2main SDL2_image RealCore Real3D nlohmann_json::nlohmann_json)
