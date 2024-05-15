@@ -27,13 +27,25 @@ namespace real
 		bool usesUbo = false;
 	};
 
+	template <typename T>
+	struct BufferContext
+	{
+		bool isDirty = false;
+		VkBuffer buffer{ nullptr };
+		VkDeviceMemory memory{ nullptr };
+		std::vector<T> data{};
+	};
+
 	template <vertex_type V>
 	class Mesh : public real::Component
 	{
 	public:
 		explicit Mesh(real::GameObject* pOwner, MeshInfo info)
 			: Component(pOwner)
-			, m_Info(info) {}
+			, m_Info(info)
+		{
+			m_VertexBuffers.push_back({});
+		}
 
 		virtual ~Mesh() override = default;
 
@@ -44,7 +56,24 @@ namespace real
 
 		virtual void Init(const GameContext& context)
 		{
-			CreateVertexBuffer(context);
+			CreateVertexBuffer(context, 0);
+		}
+
+		virtual void Update() override
+		{
+			if (m_VertexBufferIsDirty == false)
+				return;
+
+			for (auto& [isDirty, buffer, memory, data] : m_VertexBuffers)
+			{
+				if (isDirty)
+				{
+					Mesh<V>::UpdateVertexBuffer(data, buffer);
+					isDirty = false;
+				}
+			}
+
+			m_VertexBufferIsDirty = false;
 		}
 
 		virtual void Kill() override
@@ -57,11 +86,11 @@ namespace real
 				vkFreeMemory(context.vulkanContext.device, m_UniformBuffersMemory[i], nullptr);
 			}
 
-			vkDestroyBuffer(context.vulkanContext.device, m_VertexBuffer, nullptr);
-			vkFreeMemory(context.vulkanContext.device, m_VertexBufferMemory, nullptr);
-
-			vkDestroyBuffer(context.vulkanContext.device, m_StagingBuffer, nullptr);
-			vkFreeMemory(context.vulkanContext.device, m_StagingBufferMemory, nullptr);
+			for (const auto& vertexBuffer : m_VertexBuffers)
+			{
+				vkDestroyBuffer(context.vulkanContext.device, vertexBuffer.buffer, nullptr);
+				vkFreeMemory(context.vulkanContext.device, vertexBuffer.memory, nullptr);
+			}
 
 			if (m_Info.usesUbo)
 				vkDestroyDescriptorPool(context.vulkanContext.device, m_DescriptorPool, nullptr);
@@ -100,31 +129,105 @@ namespace real
 				nullptr
 			);
 		}
+
 		virtual void Draw(VkCommandBuffer commandBuffer)
 		{
-			const VkBuffer vertexBuffers[] = { m_VertexBuffer };
-			constexpr VkDeviceSize offsets[] = { 0 };
-			vkCmdBindVertexBuffers(commandBuffer, 0, 1, vertexBuffers, offsets);
+			const auto buffers = GetAllVertexBuffers();
+			const std::vector<VkDeviceSize> offsets(buffers.size(), 0);
+			vkCmdBindVertexBuffers(commandBuffer, 0, static_cast<uint32_t>(buffers.size()), buffers.data(), offsets.data());
 
-			vkCmdDraw(commandBuffer, static_cast<uint32_t>(m_Vertices.size()), 1, 0, 0);
+			const auto vertices = GetAllVertices();
+			vkCmdDraw(commandBuffer, static_cast<uint32_t>(vertices.size()), 1, 0, 0);
 		}
 
 		void AddVertex(V vertex)
 		{
-			m_Vertices.push_back(vertex);
+			if (m_VertexBuffers.back().data.size() == m_Info.vertexCapacity)
+			{
+				m_VertexBuffers.back().data.push_back(vertex);
+				m_VertexBuffers.back().isDirty = true;
+			}
+			else
+			{
+				m_VertexBuffers.push_back({});
+				m_VertexBuffers.back().data.push_back(vertex);
+				CreateVertexBuffer(RealEngine::GetGameContext(), m_VertexBuffers.size() - 1);
+			}
+
+			m_VertexBufferIsDirty = true;
 		}
 		void AddVertices(const std::vector<V>& vertices)
 		{
-			m_Vertices.insert(m_Vertices.end(), vertices.begin(), vertices.end());
+			auto v = vertices;
+
+			auto addVertexBuffers = [&]() {
+				while (!v.empty())
+				{
+					m_VertexBuffers.push_back({});
+					fillUntilSize(v, m_VertexBuffers.back().data, m_Info.vertexCapacity);
+					CreateVertexBuffer(RealEngine::GetGameContext(), m_VertexBuffers.size() - 1);
+					m_VertexBuffers.back().isDirty = true;
+				}
+				};
+
+			if (m_VertexBuffers.back().data.size() == m_Info.vertexCapacity)
+			{
+				addVertexBuffers();
+			}
+			else
+			{
+				fillUntilSize(v, m_VertexBuffers.back().data, m_Info.vertexCapacity);
+				m_VertexBuffers.back().isDirty = true;
+
+				addVertexBuffers();
+			}
+
+			m_VertexBufferIsDirty = true;
+		}
+		void SetVertices(const std::vector<V>& vertices)
+		{
+			auto v = vertices;
+			int counter = 0;
+
+			while (v.empty() == false)
+			{
+				bool createNewBuffer = false;
+				if (counter >= m_VertexBuffers.size())
+				{
+					m_VertexBuffers.push_back({});
+					createNewBuffer = true;
+				}
+
+				m_VertexBuffers[counter].data.clear();
+
+				fillUntilSize(v, m_VertexBuffers[counter].data, m_Info.vertexCapacity);
+				if (createNewBuffer)
+					CreateVertexBuffer(RealEngine::GetGameContext(), counter);
+				m_VertexBuffers[counter].isDirty = true;
+
+				++counter;
+			}
+
+			if (counter < m_VertexBuffers.size() - 1)
+			{
+				m_VertexBuffers.erase(m_VertexBuffers.begin() + counter, m_VertexBuffers.end());
+			}
+
+			m_VertexBufferIsDirty = true;
+		}
+		void ClearVertices()
+		{
+			m_VertexBuffers.erase(m_VertexBuffers.begin() + 1, m_VertexBuffers.end());
+			m_VertexBuffers.front().data.clear();
+			
+			m_VertexBufferIsDirty = true;
 		}
 
 	protected:
 		MeshInfo m_Info;
-		std::vector<V> m_Vertices{};
 
-		// Vertex buffer
-		VkBuffer m_VertexBuffer{ nullptr }, m_StagingBuffer{ nullptr };
-		VkDeviceMemory m_VertexBufferMemory{ nullptr }, m_StagingBufferMemory{ nullptr };
+		bool m_VertexBufferIsDirty{ false };
+		std::vector<BufferContext<V>> m_VertexBuffers;
 
 		// Uniform (Constant) buffer
 		std::vector<VkBuffer> m_UniformBuffers{ nullptr };
@@ -136,21 +239,31 @@ namespace real
 		VkDescriptorPool m_DescriptorPool{};
 		std::vector<VkDescriptorSet> m_DescriptorSets{};
 
-		void CreateVertexBuffer(const GameContext& context)
+		void CreateVertexBuffer(const GameContext& context, size_t index)
 		{
-			const VkDeviceSize bufferSize = sizeof(V) * m_Vertices.size();
+			const VkDeviceSize bufferSize = sizeof(V) * m_Info.vertexCapacity;
 
+			VkBuffer stagingBuffer;
+			VkDeviceMemory stagingBufferMemory;
 			CreateBuffer(context, bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
 				VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
-				m_StagingBuffer, m_StagingBufferMemory);
+				stagingBuffer, stagingBufferMemory);
 
-			UpdateVertexBuffer(context, bufferSize, m_StagingBufferMemory);
+			UpdateBuffer<V>(bufferSize, stagingBufferMemory, m_VertexBuffers[index].data);
 
+			VkBuffer vertexBuffer;
+			VkDeviceMemory vertexBufferMemory;
 			CreateBuffer(context, bufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
-				VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, m_VertexBuffer,
-				m_VertexBufferMemory);
+				VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, vertexBuffer,
+				vertexBufferMemory);
 
-			CopyBuffer(context, m_StagingBuffer, m_VertexBuffer, bufferSize);
+			CopyBuffer(context, stagingBuffer, vertexBuffer, bufferSize);
+
+			m_VertexBuffers[index].buffer = vertexBuffer;
+			m_VertexBuffers[index].memory = vertexBufferMemory;
+
+			vkDestroyBuffer(context.vulkanContext.device, stagingBuffer, nullptr);
+			vkFreeMemory(context.vulkanContext.device, stagingBufferMemory, nullptr);
 		}
 		void CreateUniformBuffers(const GameContext& context)
 		{
@@ -263,13 +376,46 @@ namespace real
 			}
 		}
 
-		void UpdateVertexBuffer(const GameContext& context, VkDeviceSize size, VkDeviceMemory bufferMemory)
+
+		template <typename T>
+		static void UpdateBuffer(VkDeviceSize size, VkDeviceMemory bufferMemory, const std::vector<T>& v)
 		{
 			void* data;
+			const auto context = RealEngine::GetGameContext();
 			vkMapMemory(context.vulkanContext.device, bufferMemory, 0, size, 0, &data);
-			memcpy(data, m_Vertices.data(), sizeof(V) * m_Vertices.size());
+			memcpy(data, v.data(), sizeof(T) * v.size());
 			vkUnmapMemory(context.vulkanContext.device, bufferMemory);
 		}
+
+		void UpdateVertexBuffer(const std::vector<V>& data, VkBuffer buffer)
+		{
+			const VkDeviceSize bufferSize = sizeof(V) * m_Info.vertexCapacity;
+			const auto context = RealEngine::GetGameContext();
+
+			VkBuffer stagingBuffer;
+			VkDeviceMemory stagingBufferMemory;
+			CreateBuffer(context, bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+				VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+				stagingBuffer, stagingBufferMemory);
+
+			UpdateBuffer<V>(bufferSize, stagingBufferMemory, data);
+
+			CopyBuffer(context, stagingBuffer, buffer, bufferSize);
+
+			vkDestroyBuffer(context.vulkanContext.device, stagingBuffer, nullptr);
+			vkFreeMemory(context.vulkanContext.device, stagingBufferMemory, nullptr);
+		}
+
+		//template <typename T>
+		//std::vector<T> GetSubVector(int buffer, const std::vector<T>& data, uint32_t capacity)
+		//{
+		//	std::vector<T> v;
+		//	auto begin = buffer * capacity;
+		//	auto size = data - begin;
+		//	size = std::min(size, static_cast<size_t>(capacity));
+		//	v.insert(v.end(), v.begin() + begin, v.begin() + size);
+		//	return v;
+		//}
 
 		static void CopyBuffer(const GameContext& context, VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size)
 		{
@@ -277,11 +423,35 @@ namespace real
 
 			VkBufferCopy copyRegion;
 			copyRegion.srcOffset = 0; // Optional
-			copyRegion.dstOffset = 0; // Optional
+			copyRegion.dstOffset = 0; // Optionals
 			copyRegion.size = size;
 			vkCmdCopyBuffer(commandBuffer, srcBuffer, dstBuffer, 1, &copyRegion);
 
 			CommandBuffer::StopSingleTimeCommands(context, commandBuffer);
+		}
+
+		std::vector<VkBuffer> GetAllVertexBuffers()
+		{
+			std::vector<VkBuffer> v(m_VertexBuffers.size());
+
+			std::ranges::transform(m_VertexBuffers, v.begin(),
+				[](const BufferContext<V>& vertexBuffer)
+				{
+					return vertexBuffer.buffer;
+				});
+
+			return v;
+		}
+		std::vector<V> GetAllVertices()
+		{
+			std::vector<V> v;
+
+			for (const auto & vertexBuffer : m_VertexBuffers)
+			{
+				v.insert(v.end(), vertexBuffer.data.begin(), vertexBuffer.data.end());
+			}
+
+			return v;
 		}
 
 		void PrintMat4(const glm::mat4& matrix) const
