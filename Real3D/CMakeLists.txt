@@ -96,8 +96,8 @@ set(SOURCES
     "Misc/CameraManager.h"
     
     # Input
-    "Misc/CameraInputManager.cpp" 
-    "Misc/CameraInputManager.h"
+     
+    
     
     "Content/ContentManager.h" 
     "Content/ContentManager.cpp" 
