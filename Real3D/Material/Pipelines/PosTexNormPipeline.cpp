@@ -16,7 +16,7 @@ void real::PosTexNormPipeline::CreatePipeline(const VulkanContext& vulkan)
 
 	SetPrimitiveTopology(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST);
 
-	PosNormBase::CreatePipeline(vulkan);
+	PosNormBase<PosTexNorm>::CreatePipeline(vulkan);
 }
 
 void real::PosTexNormPipeline::CreateDescriptorSetLayout(const VkDevice& device)
