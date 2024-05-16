@@ -7,6 +7,7 @@
 #include "Mesh/MeshIndexed.h"
 #include "Util/Macros.h"
 
+class World;
 enum class EDirection : char;
 enum class EBlock;
 
@@ -35,8 +36,12 @@ public:
 	virtual void Start() override;
 	virtual void Update() override;
 
+	void UpdateChunkBoarder(const Chunk* adjacentChunk, const glm::ivec2& dir);
+
 private:
 	bool m_IsDirty{ false };
+
+	int m_LowestY{ CHUNK_HEIGHT }, m_HighestY{ 0 };
 
 	float m_BlockRemoveTime{ 2.f }, m_AccuTime{ 0.f };
 	size_t m_RemoveBlock{ 63 }, m_AddBlock{ 64 };
@@ -45,10 +50,11 @@ private:
 	std::map<glm::vec3, std::pair<bool, std::vector<real::PosTexNorm>>, Vec3Comparator> m_RenderedBlocks{};
 
 	real::MeshIndexed<real::PosTexNorm>* m_pMeshComponent{ nullptr };
+	World* m_pWorldComponent{ nullptr };
 
 	std::pair<std::vector<real::PosTexNorm>, std::vector<uint32_t>> CalculateMeshData();
 
-	bool CanRenderFace(size_t x, size_t z, size_t y) const;
+	bool CanRenderFace(int x, int z, int y) const;
 };
 
 #endif // CHUNK_H
