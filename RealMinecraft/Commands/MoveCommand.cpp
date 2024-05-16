@@ -5,11 +5,14 @@
 #include <real_core/GameObject.h>
 #include <real_core/GameTime.h>
 
+#include "Components/Player.h"
+
 MoveCommand::MoveCommand(int id, int controllerId, real::GameObject* pOwner, glm::ivec3 direction)
 	: GameObjectCommand(id, controllerId, pOwner)
 	, m_Direction(direction)
 {
 	m_Direction = glm::clamp(m_Direction, glm::ivec3(-1), glm::ivec3(1));
+	m_pPlayerComponent = GetGameObject()->GetComponent<Player>();
 }
 
 void MoveCommand::Execute()
@@ -28,4 +31,5 @@ void MoveCommand::Execute()
 	translation += rightXz * dt * m_Speed * static_cast<float>(m_Direction.x);
 
 	transform->Translate(translation);
+	m_pPlayerComponent->UpdateChunkPos(glm::ivec3(transform->GetWorldPosition()));
 }

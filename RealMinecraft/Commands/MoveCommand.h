@@ -5,6 +5,8 @@
 
 #include <real_core/Command.h>
 
+class Player;
+
 class MoveCommand final : public real::GameObjectCommand
 {
 public:
@@ -21,6 +23,8 @@ public:
 private:
 	glm::ivec3 m_Direction{ 0,0, 0 };
 	float m_Speed{ 2 };
+
+	Player* m_pPlayerComponent{ nullptr };
 };
 
 #endif // MOVECOMMAND_H
