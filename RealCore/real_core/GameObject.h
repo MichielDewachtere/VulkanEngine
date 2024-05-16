@@ -58,7 +58,7 @@ namespace real
 
 		Transform* GetTransform() const { return m_pTransform.get(); }
 
-		Subject<GameObjectEvent> gameObjectDestroyed;
+		Subject<GameObjectEvent, GameObject*> gameObjectDestroyed;
 
 #pragma region Component Logic
 		/**

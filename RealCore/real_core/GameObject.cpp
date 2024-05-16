@@ -227,7 +227,7 @@ void real::GameObject::OnGui()
 
 void real::GameObject::Destroy()
 {
-	gameObjectDestroyed.Notify(GameObjectEvent::destroyed);
+	gameObjectDestroyed.Notify(GameObjectEvent::destroyed, this);
 	InputManager::GetInstance().RemoveGameObjectCommands(this);
 
 	std::ranges::for_each(m_pChildren, [](const auto& go)
