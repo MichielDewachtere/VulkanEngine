@@ -1,6 +1,8 @@
 #ifndef MATERIAL_H
 #define MATERIAL_H
 
+#include <real_core/Observer.h>
+
 #include "Pipelines/Pipeline.h"
 #include "Core/CommandPool.h"
 #include "Util/Concepts.h"
@@ -12,7 +14,9 @@ namespace real
 	class SwapChain;
 
 	template <pipeline_type P, vertex_type V>
-	class Material final : public BaseMaterial
+	class Material final
+		: public BaseMaterial
+		, public Observer<GameObjectEvent, GameObject*>
 	{
 	public:
 		explicit Material(const VulkanContext& context)
@@ -36,6 +40,8 @@ namespace real
 		void BindMesh(const GameContext& context, Mesh<V>* pMesh)
 		{
 			m_pMeshes.push_back(pMesh);
+			pMesh->GetOwner()->gameObjectDestroyed.AddObserver(this);
+
 			if (auto layout = m_pPipeline->GetDescriptorSetLayout();
 				layout != VK_NULL_HANDLE)
 					m_pMeshes.back()->CreateDescriptor(context, layout);
@@ -71,10 +77,29 @@ namespace real
 			}
 		}
 
+		void HandleEvent(GameObjectEvent, GameObject*) override;
+		void OnSubjectDestroy() override {}
+
 	private:
 		std::unique_ptr<Pipeline> m_pPipeline{ nullptr };
 		std::vector<Mesh<V>*> m_pMeshes;
 	};
+
+	template <pipeline_type P, vertex_type V>
+	void Material<P, V>::HandleEvent(GameObjectEvent event, GameObject* go)
+	{
+		if (event == GameObjectEvent::destroyed)
+		{
+			go->gameObjectDestroyed.RemoveObserver(this);
+
+			auto pMesh = go->GetComponent<Mesh<V>>();
+			const auto it = std::ranges::find(m_pMeshes, pMesh);
+			if (it == m_pMeshes.end())
+				return;
+
+			m_pMeshes.erase(it);
+		}
+	}
 }
 
 #endif // MATERIAL_H
