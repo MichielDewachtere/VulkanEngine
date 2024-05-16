@@ -33,6 +33,9 @@ set(SOURCES
     "Scenes/TestScene.cpp" 
     "Scenes/TestScene.h" 
  
+    "Components/Chunk.cpp"
+    "Components/Chunk.h"
+
     "Commands/MoveCommand.cpp"
     "Commands/MoveCommand.h"
     "Commands/RotateCommand.h" 
@@ -44,7 +47,12 @@ set(SOURCES
     "Util/BlockModel.h" 
     "Util/GameUtils.h"
     "Util/bimap.hpp"
- "Components/Chunk.cpp" "Util/Macros.h")
+    "Util/Macros.h"
+    "Util/NoiseManager.cpp"
+    "Util/NoiseManager.h"
+    "Util/SimplexNoise.cpp"
+    "Util/SimplexNoise.h"
+ "Components/World.cpp" "Components/Player.cpp")
 
 add_executable(${PROJECT_NAME} ${SOURCES} ${GLSL_SOURCE_FILES})
 
