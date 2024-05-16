@@ -2,6 +2,7 @@
 
 #include <array>
 #include <vulkan/vulkan_core.h>
+
 #include "RealEngine.h"
 #include "RenderPass.h"
 #include "Core/SwapChain.h"
@@ -39,7 +40,7 @@ void real::Renderer::Init(GameContext& context)
 	CreateSyncObjects(context);
 }
 
-void real::Renderer::CleanUp(const GameContext& context)
+void real::Renderer::CleanUp(const GameContext& context) const
 {
 	for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) 
 	{
