@@ -21,7 +21,7 @@ namespace real
 		Renderer operator=(Renderer&&) = delete;
 
 		void Init(GameContext& context);  // NOLINT(clang-diagnostic-overloaded-virtual)
-		void CleanUp(const GameContext& context);
+		void CleanUp(const GameContext& context) const;
 
 		void Draw(const GameContext& context);
 
