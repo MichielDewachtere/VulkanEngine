@@ -51,10 +51,14 @@ void real::PosNormBase<V>::CreatePipeline(const VulkanContext& vulkan)
 
 	VkPipelineVertexInputStateCreateInfo vertexInput{};
 	vertexInput.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
-	vertexInput.pVertexAttributeDescriptions = V::GetAttributeDescriptions().data();
-	vertexInput.vertexAttributeDescriptionCount = static_cast<uint32_t>(V::GetAttributeDescriptions().size());
-	vertexInput.pVertexBindingDescriptions = V::GetBindingDescription().data();
-	vertexInput.vertexBindingDescriptionCount = static_cast<uint32_t>(V::GetBindingDescription().size());
+
+	auto attributeDescriptions = V::GetAttributeDescriptions();
+	vertexInput.pVertexAttributeDescriptions = attributeDescriptions.data();
+	vertexInput.vertexAttributeDescriptionCount = static_cast<uint32_t>(attributeDescriptions.size());
+
+	auto bindingDescriptions = V::GetBindingDescription();
+	vertexInput.pVertexBindingDescriptions = bindingDescriptions.data();
+	vertexInput.vertexBindingDescriptionCount = static_cast<uint32_t>(bindingDescriptions.size());
 
 	VkPipelineViewportStateCreateInfo viewportState{};
 	viewportState.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
