@@ -4,6 +4,6 @@
 #define CHUNK_SIZE 16
 #define CHUNK_HEIGHT 256
 
-#define SINGLE_CHUNK
+//#define SINGLE_CHUNK
 
 #endif // GAMEMACROS_H
