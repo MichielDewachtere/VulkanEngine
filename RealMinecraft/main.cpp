@@ -19,8 +19,6 @@ void Load()
 	const auto context = RealEngine::GetGameContext();
 
 	auto& materialManager = MaterialManager::GetInstance();
-	materialManager.AddMaterial<PosCol2DPipeline, PosCol2D>(context);
-	materialManager.AddMaterial<PosColNormPipeline, PosColNorm>(context);
 	materialManager.AddMaterial<PosTexNormPipeline, PosTexNorm>(context);
 
 	auto& sceneManager = real::SceneManager::GetInstance();
