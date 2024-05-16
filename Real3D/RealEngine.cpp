@@ -150,11 +150,11 @@ void real::RealEngine::MainLoop()
 			std::cout << "\033[1;90mFPS: " << time.GetFPS_Unsigned() << "\033[0m\n";
 		}
 
-#ifdef NDEBUG
-		auto frameDuration = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::duration<float>(m_GameContext.inputUpdateFrequency));
-		const auto sleepTime = currentTime + frameDuration - std::chrono::high_resolution_clock::now();
-		std::this_thread::sleep_for(sleepTime);
-#endif // NDEBUG
+//#ifdef NDEBUG
+//		auto frameDuration = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::duration<float>(m_GameContext.inputUpdateFrequency));
+//		const auto sleepTime = currentTime + frameDuration - std::chrono::high_resolution_clock::now();
+//		std::this_thread::sleep_for(sleepTime);
+//#endif // NDEBUG
 	}
 
 	vkDeviceWaitIdle(m_GameContext.vulkanContext.device);
