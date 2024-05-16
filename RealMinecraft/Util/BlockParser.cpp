@@ -50,7 +50,8 @@ std::vector<glm::vec3> BlockParser::GetVertexPositions(const BlockElement& e, co
 
     std::vector<glm::vec3> vertices;
 
-    switch (dir) {
+    switch (dir)
+    {
     case EDirection::north:
         vertices.emplace_back(glm::vec3{ leftBot.x, rightTop.y, rightTop.z });
         vertices.emplace_back(glm::vec3{ rightTop.x, rightTop.y, rightTop.z });
@@ -98,7 +99,12 @@ glm::vec2 BlockParser::GetTexCoord(int atlasId, int vertexId, EDirection dir, Bl
     const float posY = static_cast<float>(atlasId / m_AmountOfTexY) / static_cast<float>(m_AmountOfTexY);
 
     const auto uv = model.elements.front().faces[dir].uv;
-	const auto v = std::vector({ glm::vec2{ uv.x,uv.w }, glm::vec2{ uv.z,uv.w }, glm::vec2{ uv.z,uv.y }, glm::vec2{ uv.x,uv.y } });
+
+	auto v = std::vector({ glm::vec2{ uv.x,uv.w }, glm::vec2{ uv.z,uv.w }, glm::vec2{ uv.z,uv.y }, glm::vec2{ uv.x,uv.y } });
+    // North side is flipped for some reason...
+	if (dir == EDirection::north)
+        v = std::vector({ glm::vec2{ uv.x,uv.y }, glm::vec2{ uv.z,uv.y }, glm::vec2{ uv.z,uv.w }, glm::vec2{ uv.x,uv.w } });
+
     auto texCoord = v[vertexId];
     texCoord /= glm::vec2{ m_AmountOfTexX, m_AmountOfTexY };
     texCoord /= m_TextureSize;
