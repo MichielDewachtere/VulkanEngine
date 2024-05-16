@@ -131,7 +131,7 @@ namespace real
 		}
 	};
 	
-	struct /*alignas(16)*/ PosTexNorm
+	struct alignas(16) PosTexNorm
 	{
 		glm::vec3 pos;
 		glm::vec2 texCoord;
