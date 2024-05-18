@@ -10,6 +10,7 @@
 #include "Util/Enumerations.h"
 #include "Util/NoiseManager.h"
 #include "Components/World.h"
+#include "Pipelines/WaterPipeline.h"
 
 
 Chunk::Chunk(real::GameObject* pOwner)
@@ -36,7 +37,13 @@ Chunk::Chunk(real::GameObject* pOwner)
 			const int yLevel = static_cast<int>(terrainNoiseValue);
 
 			m_Blocks[x][z].fill(EBlock::air);
-			m_Blocks[x][z][yLevel] = EBlock::grassBlock;
+			if (yLevel <= WATER_LEVEL)
+			{
+				std::fill_n(m_Blocks[x][z].begin() + yLevel, WATER_LEVEL - yLevel, EBlock::waterTemp);
+				m_Blocks[x][z][yLevel] = EBlock::sand;
+			}
+			else
+				m_Blocks[x][z][yLevel] = EBlock::grassBlock;
 			std::fill_n(m_Blocks[x][z].begin() + yLevel - 3, 3, EBlock::dirt);
 			std::fill_n(m_Blocks[x][z].begin(), yLevel - 3, EBlock::stone);
 
@@ -56,6 +63,8 @@ Chunk::Chunk(real::GameObject* pOwner)
 		}
 	}
 
+	m_HighestY = std::max(m_HighestY, WATER_LEVEL);
+
 	int minYLevel = m_LowestY;
 	int maxYLevel = m_HighestY;
 
@@ -72,17 +81,17 @@ Chunk::Chunk(real::GameObject* pOwner)
 	}
 
 	// TODO: This could be done more efficiently
-	for (size_t x = 0; x < m_Blocks.size(); ++x) 
+	for (size_t x = 0; x < m_Blocks.size(); ++x)
 	{
 		const auto& blockLayer = m_Blocks[x];
 		for (size_t z = 0; z < m_Blocks[x].size(); ++z)
 		{
 			const auto& blockRow = blockLayer[z];
-			for (size_t y = minYLevel; y <= std::min(static_cast<size_t>(maxYLevel), blockRow.size() - 1); ++y) 
+			for (size_t y = minYLevel; y <= std::min(static_cast<size_t>(maxYLevel), blockRow.size() - 1); ++y)
 			{
 				if (blockRow[y] == EBlock::air)
 					continue;
-	
+
 				m_RenderedBlocks[glm::vec3{ x, y, z }] = { true, {} };
 			}
 		}
@@ -96,23 +105,8 @@ void Chunk::Start()
 {
 	const auto context = real::RealEngine::GetGameContext();
 
-	const auto id = real::GameTime::GetInstance().StartTimer();
-	auto [vertices, indices] = CalculateMeshData();
-	auto time = real::GameTime::GetInstance().EndTimer(id);
-	std::cout << "time to calculate initial mesh data " << time << " milliseconds\n";
-
-	real::MeshInfo info;
-	info.vertexCapacity = static_cast<uint32_t>(vertices.size());
-	info.indexCapacity = static_cast<uint32_t>(indices.size());
-	info.usesUbo = true;
-	info.texture = real::ContentManager::GetInstance().LoadTexture(context, "Resources/textures/atlas.png");
-
-	m_pMeshComponent = GetOwner()->AddComponent<real::MeshIndexed<real::PosTexNorm>>(info);
-	real::MaterialManager::GetInstance().GetMaterial<real::PosTexNormPipeline, real::PosTexNorm>()->BindMesh(context, m_pMeshComponent);
-
-	m_pMeshComponent->SetVertices(vertices);
-	m_pMeshComponent->SetIndices(indices);
-	m_pMeshComponent->Init(real::RealEngine::GetGameContext());
+	InitSolidChunk(context);
+	InitWaterChunk(context);
 }
 
 void Chunk::Update()
@@ -144,13 +138,13 @@ void Chunk::Update()
 		}
 
 		auto id = real::GameTime::GetInstance().StartTimer();
-		auto [vertices, indices] = CalculateMeshData();
+		auto [vertices, indices] = CalculateMeshData(true);
 		auto time = real::GameTime::GetInstance().EndTimer(id);
 		std::cout << "time to calculate mesh data " << time << " milliseconds\n";
 
-		m_pMeshComponent->SetIndices(indices);
-		m_pMeshComponent->SetVertices(vertices);
-		//m_pMeshComponent->Init(real::RealEngine::GetGameContext());
+		m_pSolidMeshComponent->SetIndices(indices);
+		m_pSolidMeshComponent->SetVertices(vertices);
+		//m_pSolidMeshComponent->Init(real::RealEngine::GetGameContext());
 
 		--m_RemoveBlock;
 		++m_AddBlock;
@@ -161,12 +155,12 @@ void Chunk::Update()
 		return;
 
 	auto id = real::GameTime::GetInstance().StartTimer();
-	auto [vertices, indices] = CalculateMeshData();
+	auto [vertices, indices] = CalculateMeshData(true);
 	auto time = real::GameTime::GetInstance().EndTimer(id);
 	std::cout << "time to calculate mesh data " << time << " milliseconds\n";
 
-	m_pMeshComponent->SetIndices(indices);
-	m_pMeshComponent->SetVertices(vertices);
+	m_pSolidMeshComponent->SetIndices(indices);
+	m_pSolidMeshComponent->SetVertices(vertices);
 
 	m_IsDirty = false;
 }
@@ -229,18 +223,21 @@ void Chunk::UpdateChunkBoarder(const Chunk* adjacentChunk, const glm::ivec2& dir
 }
 
 //TODO: Improve this
-std::pair<std::vector<real::PosTexNorm>, std::vector<uint32_t>> Chunk::CalculateMeshData()
+std::pair<std::vector<real::PosTexNorm>, std::vector<uint32_t>> Chunk::CalculateMeshData(bool solid)
 {
 	std::vector<real::PosTexNorm> vertices;
 	std::vector<uint32_t> indices;
 
 	constexpr glm::vec3 dirs[6] = { {0,0,-1},{1,0,0},{0,0,1},{-1,0,0},{0,1,0},{0,-1,0} };
-	//const auto chunkPos = GetOwner()->GetTransform()->GetWorldPosition();
 
 	std::vector<glm::vec3> blocksToRemove;
 
 	for (auto& [pos, data] : m_RenderedBlocks)
 	{
+		if (solid && m_Blocks[pos.x][pos.z][pos.y] == EBlock::waterTemp
+			|| !solid && m_Blocks[pos.x][pos.z][pos.y] != EBlock::waterTemp)
+			continue;
+
 		if (data.first)
 		{
 			data.second.clear();
@@ -254,7 +251,7 @@ std::pair<std::vector<real::PosTexNorm>, std::vector<uint32_t>> Chunk::Calculate
 
 				auto accuPos = /*chunkPos + */pos;
 
-				if (CanRenderFace(static_cast<size_t>(pos.x + dirOffset.x), static_cast<size_t>(pos.z + dirOffset.z), static_cast<size_t>(pos.y + dirOffset.y)) == false)
+				if (CanRenderFace(block, static_cast<size_t>(pos.x + dirOffset.x), static_cast<size_t>(pos.z + dirOffset.z), static_cast<size_t>(pos.y + dirOffset.y)) == false)
 					continue;
 
 				++counter;
@@ -292,22 +289,21 @@ std::pair<std::vector<real::PosTexNorm>, std::vector<uint32_t>> Chunk::Calculate
 	return { vertices, indices };
 }
 
-bool Chunk::CanRenderFace(int x, int z, int y) const
+bool Chunk::CanRenderFace(EBlock currentBlock, int x, int z, int y) const
 {
-
 #ifdef SINGLE_CHUNK
 	// Check if coordinates are in bound
 	if ((x < 0 || x >= CHUNK_SIZE)
-		 || (y < 0 || y >= CHUNK_HEIGHT)
-		 || (z < 0 || z >= CHUNK_SIZE))
-	return true;
+		|| (y < 0 || y >= CHUNK_HEIGHT)
+		|| (z < 0 || z >= CHUNK_SIZE))
+		return true;
 #else
 	if (y < 0 || y >= CHUNK_HEIGHT)
 		return true;
 
 	// Check if coordinates are in bound
 	if ((x < 0 || x >= CHUNK_SIZE)
-		 || (z < 0 || z >= CHUNK_SIZE))
+		|| (z < 0 || z >= CHUNK_SIZE))
 	{
 		const auto pos = GetOwner()->GetTransform()->GetWorldPosition();
 		auto chunkPos = glm::vec2(pos.x, pos.z);
@@ -329,9 +325,55 @@ bool Chunk::CanRenderFace(int x, int z, int y) const
 		const int blockX = (x < 0) ? CHUNK_SIZE - 1 : (x >= CHUNK_SIZE) ? 0 : x;
 		const int blockZ = (z < 0) ? CHUNK_SIZE - 1 : (z >= CHUNK_SIZE) ? 0 : z;
 
-		return pOtherChunk->m_Blocks[blockX][blockZ][y] == EBlock::air;
+		return pOtherChunk->m_Blocks[blockX][blockZ][y] == EBlock::air
+			|| (pOtherChunk->m_Blocks[blockX][blockZ][y] == EBlock::waterTemp && currentBlock != EBlock::waterTemp);
 	}
 #endif // SINGLE_CHUNK
 
-	return m_Blocks[x][z][y] == EBlock::air;
+	return m_Blocks[x][z][y] == EBlock::air || (m_Blocks[x][z][y] == EBlock::waterTemp && currentBlock != EBlock::waterTemp);
+}
+
+void Chunk::InitSolidChunk(const real::GameContext& context)
+{
+	const auto id = real::GameTime::GetInstance().StartTimer();
+	auto [vertices, indices] = CalculateMeshData(true);
+	auto time = real::GameTime::GetInstance().EndTimer(id);
+	std::cout << "time to calculate initial mesh data " << time << " milliseconds\n";
+
+	real::MeshInfo info;
+	info.vertexCapacity = static_cast<uint32_t>(vertices.size());
+	info.indexCapacity = static_cast<uint32_t>(indices.size());
+	info.usesUbo = true;
+	info.texture = real::ContentManager::GetInstance().LoadTexture(context, "Resources/textures/atlas.png");
+
+	auto& go = GetOwner()->CreateGameObject();
+	m_pSolidMeshComponent = go.AddComponent<real::MeshIndexed<real::PosTexNorm>>(info);
+	//real::MaterialManager::GetInstance().GetMaterial<GlassPipeline, real::PosTexNorm>()->BindMesh(context, m_pSolidMeshComponent);
+	real::MaterialManager::GetInstance().GetMaterial<real::PosTexNormPipeline, real::PosTexNorm>()->BindMesh(context, m_pSolidMeshComponent);
+
+	m_pSolidMeshComponent->SetVertices(vertices);
+	m_pSolidMeshComponent->SetIndices(indices);
+	m_pSolidMeshComponent->Init(real::RealEngine::GetGameContext());
+}
+
+void Chunk::InitWaterChunk(const real::GameContext& context)
+{
+	const auto id = real::GameTime::GetInstance().StartTimer();
+	auto [vertices, indices] = CalculateMeshData(false);
+	auto time = real::GameTime::GetInstance().EndTimer(id);
+	std::cout << "time to calculate initial mesh data " << time << " milliseconds\n";
+
+	real::MeshInfo info;
+	info.vertexCapacity = static_cast<uint32_t>(vertices.size());
+	info.indexCapacity = static_cast<uint32_t>(indices.size());
+	info.usesUbo = true;
+	info.texture = real::ContentManager::GetInstance().LoadTexture(context, "Resources/textures/atlas.png");
+
+	auto& go = GetOwner()->CreateGameObject();
+	m_pWaterMeshComponent = go.AddComponent<real::MeshIndexed<real::PosTexNorm>>(info);
+	real::MaterialManager::GetInstance().GetMaterial<WaterPipeline, real::PosTexNorm>()->BindMesh(context, m_pWaterMeshComponent);
+
+	m_pWaterMeshComponent->SetVertices(vertices);
+	m_pWaterMeshComponent->SetIndices(indices);
+	m_pWaterMeshComponent->Init(real::RealEngine::GetGameContext());
 }

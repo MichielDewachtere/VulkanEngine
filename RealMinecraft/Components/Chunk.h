@@ -49,12 +49,16 @@ private:
 	std::array<std::array<std::array<EBlock, CHUNK_HEIGHT>, CHUNK_SIZE>, CHUNK_SIZE> m_Blocks{};
 	std::map<glm::vec3, std::pair<bool, std::vector<real::PosTexNorm>>, Vec3Comparator> m_RenderedBlocks{};
 
-	real::MeshIndexed<real::PosTexNorm>* m_pMeshComponent{ nullptr };
+	real::MeshIndexed<real::PosTexNorm>* m_pSolidMeshComponent{ nullptr };
+	real::MeshIndexed<real::PosTexNorm>* m_pWaterMeshComponent{ nullptr };
 	World* m_pWorldComponent{ nullptr };
 
-	std::pair<std::vector<real::PosTexNorm>, std::vector<uint32_t>> CalculateMeshData();
+	std::pair<std::vector<real::PosTexNorm>, std::vector<uint32_t>> CalculateMeshData(bool solid);
 
-	bool CanRenderFace(int x, int z, int y) const;
+	bool CanRenderFace(EBlock currentBlock, int x, int z, int y) const;
+
+	void InitSolidChunk(const real::GameContext& context);
+	void InitWaterChunk(const real::GameContext& context);
 };
 
 #endif // CHUNK_H
