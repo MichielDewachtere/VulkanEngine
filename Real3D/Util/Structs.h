@@ -12,6 +12,8 @@
 #define GLM_ENABLE_EXPERIMENTAL
 #include <glm/gtx/hash.hpp>
 
+#include "util/vk_mem_alloc.h"
+
 namespace real
 {
 #pragma region Engine
@@ -21,6 +23,7 @@ namespace real
 		VkPhysicalDevice physicalDevice;
 		VkSurfaceKHR surface;
 		VkRenderPass renderPass;
+		VmaAllocator allocator;
 	};
 	
 	struct GameContext

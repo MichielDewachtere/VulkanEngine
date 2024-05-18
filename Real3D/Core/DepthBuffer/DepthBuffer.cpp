@@ -6,6 +6,8 @@
 #include "Core/SwapChain.h"
 #include "Util/VulkanUtil.h"
 
+//#include "Util/vk_mem_alloc.h"
+
 real::DepthBuffer::DepthBuffer(const GameContext& context)
 {
 	Create(context);
@@ -17,19 +19,21 @@ void real::DepthBuffer::Create(const GameContext& context)
 
 	const auto [width, height] = Renderer::GetInstance().GetSwapChain()->GetExtent();
 
-	CreateImage(context, width, height, depthFormat, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, m_DepthImage, m_DepthImageMemory);
+	CreateImage(context, width, height, depthFormat, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, m_DepthImage, m_DepthImageAllocation);
 	m_DepthImageView = CreateImageView(context, m_DepthImage, depthFormat, VK_IMAGE_ASPECT_DEPTH_BIT);
 }
 
 void real::DepthBuffer::CleanUp(const GameContext& context)
 {
 	vkDestroyImageView(context.vulkanContext.device, m_DepthImageView, nullptr);
-	vkDestroyImage(context.vulkanContext.device, m_DepthImage, nullptr);
-	vkFreeMemory(context.vulkanContext.device, m_DepthImageMemory, nullptr);
+
+	vmaDestroyImage(context.vulkanContext.allocator, m_DepthImage, m_DepthImageAllocation);
+	//vkDestroyImage(context.vulkanContext.device, m_DepthImage, nullptr);
+	//vkFreeMemory(context.vulkanContext.device, m_DepthImageMemory, nullptr);
 }
 
 VkFormat real::DepthBuffer::FindSupportedFormat(const GameContext& context, const std::vector<VkFormat>& candidates,
-                                          const VkImageTiling tiling, const VkFormatFeatureFlags features)
+                                                const VkImageTiling tiling, const VkFormatFeatureFlags features)
 {
 	for (const VkFormat format : candidates)
 	{

@@ -4,7 +4,6 @@
 
 #include <SDL2/SDL_vulkan.h>
 #include <SDL_image.h>
-#include <thread>
 
 #include <real_core/GameTime.h>
 #include <real_core/InputManager.h>
@@ -17,10 +16,15 @@
 #include "Graphics/Renderer.h"
 #include "ImGui/imgui_impl_vulkan.h"
 
+#define VK_USE_PLATFORM_WIN32_KHR
+#define VMA_IMPLEMENTATION
+#include "util/vk_mem_alloc.h"
+
 real::RealEngine::RealEngine()
 {
 	InitSDL();
 	InitVulkan();
+	InitVma();
 	InitRenderer();
 	InitImGui();
 }
@@ -70,6 +74,25 @@ void real::RealEngine::InitVulkan()
 
 	// Create Command Pool
 	CommandPool::GetInstance().Init(m_GameContext);
+}
+
+void real::RealEngine::InitVma() const
+{
+	VmaVulkanFunctions vulkanFunctions = {};
+	vulkanFunctions.vkGetInstanceProcAddr = &vkGetInstanceProcAddr;
+	vulkanFunctions.vkGetDeviceProcAddr = &vkGetDeviceProcAddr;
+
+	VmaAllocatorCreateInfo allocatorCreateInfo = {};
+	//allocatorCreateInfo.flags = VMA_ALLOCATOR_CREATE_EXT_MEMORY_BUDGET_BIT;
+	allocatorCreateInfo.vulkanApiVersion = VK_API_VERSION_1_0;
+	allocatorCreateInfo.physicalDevice = m_GameContext.vulkanContext.physicalDevice;
+	allocatorCreateInfo.device = m_GameContext.vulkanContext.device;
+	allocatorCreateInfo.instance = m_Instance;
+	allocatorCreateInfo.pVulkanFunctions = &vulkanFunctions;
+
+	VmaAllocator allocator;
+	vmaCreateAllocator(&allocatorCreateInfo, &allocator);
+	m_GameContext.vulkanContext.allocator = allocator;
 }
 
 void real::RealEngine::InitRenderer()
@@ -183,6 +206,8 @@ void real::RealEngine::CleanUp()
 	{
 		DestroyDebugUtilsMessengerEXT(m_Instance, m_DebugMessenger, nullptr);
 	}
+
+	vmaDestroyAllocator(m_GameContext.vulkanContext.allocator);
 
 	vkDestroyDevice(m_GameContext.vulkanContext.device, nullptr);
 

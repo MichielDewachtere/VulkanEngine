@@ -1,5 +1,7 @@
 #include "VulkanUtil.h"
 
+#include "vk_mem_alloc.h"
+
 VkResult real::CreateDebugUtilsMessengerEXT(VkInstance instance, const VkDebugUtilsMessengerCreateInfoEXT* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkDebugUtilsMessengerEXT* pDebugMessenger) {
 	auto func = (PFN_vkCreateDebugUtilsMessengerEXT)vkGetInstanceProcAddr(instance, "vkCreateDebugUtilsMessengerEXT");
 	if (func != nullptr) {
@@ -68,7 +70,7 @@ real::QueueFamilyIndices real::FindQueueFamilies(const VkPhysicalDevice& device,
 }
 
 void real::CreateImage(const real::GameContext& context, uint32_t width, uint32_t height, VkFormat format, VkImageTiling tiling,
-                 VkImageUsageFlags usage, VkMemoryPropertyFlags properties, VkImage& image, VkDeviceMemory& imageMemory)
+                 VkImageUsageFlags usage, VkMemoryPropertyFlags properties, VkImage& image, VmaAllocation& imageAllocation)
 {
     VkImageCreateInfo imageInfo{};
     imageInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
@@ -85,23 +87,33 @@ void real::CreateImage(const real::GameContext& context, uint32_t width, uint32_
     imageInfo.samples = VK_SAMPLE_COUNT_1_BIT;
     imageInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
 
-    if (vkCreateImage(context.vulkanContext.device, &imageInfo, nullptr, &image) != VK_SUCCESS) {
-        throw std::runtime_error("failed to create image!");
+    // VMA allocation info
+    VmaAllocationCreateInfo allocInfo{};
+    allocInfo.usage = VMA_MEMORY_USAGE_GPU_ONLY;
+    allocInfo.requiredFlags = properties;
+
+    // Create image and allocate memory
+    if (vmaCreateImage(context.vulkanContext.allocator, &imageInfo, &allocInfo, &image, &imageAllocation, nullptr) != VK_SUCCESS) {
+        throw std::runtime_error("failed to create image with VMA!");
     }
 
-    VkMemoryRequirements memRequirements;
-    vkGetImageMemoryRequirements(context.vulkanContext.device, image, &memRequirements);
+    //if (vkCreateImage(context.vulkanContext.device, &imageInfo, nullptr, &image) != VK_SUCCESS) {
+    //    throw std::runtime_error("failed to create image!");
+    //}
 
-    VkMemoryAllocateInfo allocInfo{};
-    allocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
-    allocInfo.allocationSize = memRequirements.size;
-    allocInfo.memoryTypeIndex = FindMemoryType(context, memRequirements.memoryTypeBits, properties);
+    //VkMemoryRequirements memRequirements;
+    //vkGetImageMemoryRequirements(context.vulkanContext.device, image, &memRequirements);
 
-    if (vkAllocateMemory(context.vulkanContext.device, &allocInfo, nullptr, &imageMemory) != VK_SUCCESS) {
-        throw std::runtime_error("failed to allocate image memory!");
-    }
+    //VkMemoryAllocateInfo allocInfo{};
+    //allocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+    //allocInfo.allocationSize = memRequirements.size;
+    //allocInfo.memoryTypeIndex = FindMemoryType(context, memRequirements.memoryTypeBits, properties);
 
-    vkBindImageMemory(context.vulkanContext.device, image, imageMemory, 0);
+    //if (vkAllocateMemory(context.vulkanContext.device, &allocInfo, nullptr, &imageMemory) != VK_SUCCESS) {
+    //    throw std::runtime_error("failed to allocate image memory!");
+    //}
+
+    //vkBindImageMemory(context.vulkanContext.device, image, imageMemory, 0);
 }
 
 VkImageView real::CreateImageView(const GameContext& context, VkImage image, VkFormat format,
@@ -142,7 +154,7 @@ VkPipelineInputAssemblyStateCreateInfo real::CreateInputAssemblyStateInfo(VkPrim
 }
 
 void real::CreateBuffer(const real::GameContext& context, VkDeviceSize size, VkBufferUsageFlags usage,
-	VkMemoryPropertyFlags properties, VkBuffer& buffer, VkDeviceMemory& bufferMemory)
+	VkMemoryPropertyFlags properties, VkBuffer& buffer, VmaAllocation& bufferAllocation)
 {
     // Create buffer
     VkBufferCreateInfo bufferInfo{};
@@ -151,24 +163,33 @@ void real::CreateBuffer(const real::GameContext& context, VkDeviceSize size, VkB
     bufferInfo.usage = usage;
     bufferInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
 
-    if (vkCreateBuffer(context.vulkanContext.device, &bufferInfo, nullptr, &buffer) != VK_SUCCESS) {
-        throw std::runtime_error("failed to create buffer!");
+    //VkMemoryRequirements memRequirements;
+    //vkGetBufferMemoryRequirements(context.vulkanContext.device, buffer, &memRequirements);
+
+	// VMA allocation info
+    VmaAllocationCreateInfo allocInfo{};
+    allocInfo.usage = VMA_MEMORY_USAGE_GPU_ONLY;
+    allocInfo.requiredFlags = properties;
+
+    if (vmaCreateBuffer(context.vulkanContext.allocator, &bufferInfo, &allocInfo, &buffer, &bufferAllocation, nullptr) != VK_SUCCESS) {
+        throw std::runtime_error("failed to create buffer with VMA!");
     }
 
-    VkMemoryRequirements memRequirements;
-    vkGetBufferMemoryRequirements(context.vulkanContext.device, buffer, &memRequirements);
+    //if (vkCreateBuffer(context.vulkanContext.device, &bufferInfo, nullptr, &buffer) != VK_SUCCESS) {
+    //    throw std::runtime_error("failed to create buffer!");
+    //}
 
-    VkMemoryAllocateInfo allocInfo{};
-    allocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
-    allocInfo.allocationSize = memRequirements.size;
-    allocInfo.memoryTypeIndex = FindMemoryType(context, memRequirements.memoryTypeBits, properties);
+    //VkMemoryAllocateInfo allocInfo{};
+    //allocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+    //allocInfo.allocationSize = memRequirements.size;
+    //allocInfo.memoryTypeIndex = FindMemoryType(context, memRequirements.memoryTypeBits, properties);
 
-    // TODO: This could be improved -> see Conclusion @ https://vulkan-tutorial.com/Vertex_buffers/Staging_buffer
-    if (vkAllocateMemory(context.vulkanContext.device, &allocInfo, nullptr, &bufferMemory) != VK_SUCCESS) {
-        throw std::runtime_error("failed to allocate buffer memory!");
-    }
+    //// TODO: This could be improved -> see Conclusion @ https://vulkan-tutorial.com/Vertex_buffers/Staging_buffer
+    //if (vkAllocateMemory(context.vulkanContext.device, &allocInfo, nullptr, &bufferMemory) != VK_SUCCESS) {
+    //    throw std::runtime_error("failed to allocate buffer memory!");
+    //}
 
-    vkBindBufferMemory(context.vulkanContext.device, buffer, bufferMemory, 0);
+    //vkBindBufferMemory(context.vulkanContext.device, buffer, bufferMemory, 0);
 }
 
 VkImageView real::CreateImageView(const real::GameContext& context, VkImage image, VkFormat format)

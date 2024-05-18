@@ -59,8 +59,9 @@ namespace real
 
 			for (const auto& indexBuffer : m_IndexBuffers)
 			{
-				vkDestroyBuffer(context.vulkanContext.device, indexBuffer.buffer, nullptr);
-				vkFreeMemory(context.vulkanContext.device, indexBuffer.memory, nullptr);
+				vmaDestroyBuffer(context.vulkanContext.allocator, indexBuffer.buffer, indexBuffer.allocation);
+				//vkDestroyBuffer(context.vulkanContext.device, indexBuffer.buffer, nullptr);
+				//vkFreeMemory(context.vulkanContext.device, indexBuffer.memory, nullptr);
 			}
 
 			Mesh<V>::Kill();
@@ -181,25 +182,29 @@ namespace real
 			VkDeviceSize bufferSize = sizeof(uint32_t) * Mesh<V>::m_Info.indexCapacity;
 
 			VkBuffer stagingBuffer;
-			VkDeviceMemory stagingBufferMemory;
+			VmaAllocation stagingBufferAllocation;
+			//VkDeviceMemory stagingBufferMemory;
 			CreateBuffer(context, bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
 				VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, stagingBuffer,
-				stagingBufferMemory);
+				stagingBufferAllocation);
 
-			Mesh<V>::UpdateBuffer<uint32_t>(bufferSize, stagingBufferMemory, m_IndexBuffers[index].data);
+			Mesh<V>::UpdateBuffer<uint32_t>(stagingBufferAllocation, m_IndexBuffers[index].data);
 
 			VkBuffer indexBuffer;
-			VkDeviceMemory indexBufferMemory;
+			VmaAllocation bufferAllocation;
+			//VkDeviceMemory indexBufferMemory;
 			CreateBuffer(context, bufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT,
-				VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, indexBuffer, indexBufferMemory);
+				VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, indexBuffer, bufferAllocation);
 
 			Mesh<V>::CopyBuffer(context, stagingBuffer, indexBuffer, bufferSize);
 
 			m_IndexBuffers[index].buffer = indexBuffer;
-			m_IndexBuffers[index].memory = indexBufferMemory;
+			m_IndexBuffers[index].allocation = bufferAllocation;
+			//m_IndexBuffers[index].memory = indexBufferMemory;
 
-			vkDestroyBuffer(context.vulkanContext.device, stagingBuffer, nullptr);
-			vkFreeMemory(context.vulkanContext.device, stagingBufferMemory, nullptr);
+			vmaDestroyBuffer(context.vulkanContext.allocator, stagingBuffer, stagingBufferAllocation);
+			//vkDestroyBuffer(context.vulkanContext.device, stagingBuffer, nullptr);
+			//vkFreeMemory(context.vulkanContext.device, stagingBufferMemory, nullptr);
 		}
 
 		void UpdateIndexBuffer(const std::vector<uint32_t>& data, VkBuffer buffer)
@@ -208,17 +213,19 @@ namespace real
 			const auto context = RealEngine::GetGameContext();
 
 			VkBuffer stagingBuffer;
-			VkDeviceMemory stagingBufferMemory;
+			VmaAllocation stagingBufferAllocation;
+			//VkDeviceMemory stagingBufferMemory;
 			CreateBuffer(context, bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
 				VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
-				stagingBuffer, stagingBufferMemory);
+				stagingBuffer, stagingBufferAllocation);
 
-			Mesh<V>::UpdateBuffer<uint32_t>(bufferSize, stagingBufferMemory, data);
+			Mesh<V>::UpdateBuffer<uint32_t>(stagingBufferAllocation, data);
 
 			Mesh<V>::CopyBuffer(context, stagingBuffer, buffer, bufferSize);
 
-			vkDestroyBuffer(context.vulkanContext.device, stagingBuffer, nullptr);
-			vkFreeMemory(context.vulkanContext.device, stagingBufferMemory, nullptr);
+			vmaDestroyBuffer(context.vulkanContext.allocator, stagingBuffer, stagingBufferAllocation);
+			//vkDestroyBuffer(context.vulkanContext.device, stagingBuffer, nullptr);
+			//vkFreeMemory(context.vulkanContext.device, stagingBufferMemory, nullptr);
 		}
 
 		std::vector<uint32_t> GetAllIndices()

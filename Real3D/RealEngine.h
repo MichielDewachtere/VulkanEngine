@@ -50,6 +50,7 @@ namespace real
 		void InitSDL();
 		static void InitSDLImage();
 		void InitVulkan();
+		void InitVma() const;
 		void InitRenderer();
 		void InitImGui();
 

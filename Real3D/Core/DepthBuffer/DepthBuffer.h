@@ -30,7 +30,8 @@ namespace real
 
 	private:
 		VkImage m_DepthImage{};
-		VkDeviceMemory m_DepthImageMemory{};
+		VmaAllocation m_DepthImageAllocation{};
+		//VkDeviceMemory m_DepthImageMemory{};
 		VkImageView m_DepthImageView{};
 
 		static bool HasStencilComponent(VkFormat format);

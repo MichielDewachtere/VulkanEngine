@@ -26,8 +26,10 @@ namespace real
 	uint32_t FindMemoryType(const GameContext& context, uint32_t typeFilter, VkMemoryPropertyFlags properties);
 	QueueFamilyIndices FindQueueFamilies(const VkPhysicalDevice& device, const VkSurfaceKHR& surface);
 
-	void CreateImage(const GameContext& context, uint32_t width, uint32_t height, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage, VkMemoryPropertyFlags properties, VkImage& image, VkDeviceMemory& imageMemory);
+	void CreateImage(const real::GameContext& context, uint32_t width, uint32_t height, VkFormat format, VkImageTiling tiling,
+		VkImageUsageFlags usage, VkMemoryPropertyFlags properties, VkImage& image, VmaAllocation& imageAllocation);
 	VkImageView CreateImageView(const GameContext& context, VkImage image, VkFormat format, VkImageAspectFlags aspectFlags);
+	VkImageView CreateImageView(const GameContext& context, VkImage image, VkFormat format);
 
 	template<vertex_type V>
 	VkPipelineVertexInputStateCreateInfo GetVertexInputInfo()
@@ -47,10 +49,9 @@ namespace real
 	}
 	VkPipelineInputAssemblyStateCreateInfo CreateInputAssemblyStateInfo(VkPrimitiveTopology topology);
 
-	void CreateBuffer(const GameContext& context, VkDeviceSize size, VkBufferUsageFlags usage,
-		VkMemoryPropertyFlags properties, VkBuffer& buffer, VkDeviceMemory& bufferMemory);
+	void CreateBuffer(const real::GameContext& context, VkDeviceSize size, VkBufferUsageFlags usage,
+		VkMemoryPropertyFlags properties, VkBuffer& buffer, VmaAllocation& bufferAllocation);
 
-	VkImageView CreateImageView(const GameContext& context, VkImage image, VkFormat format);
 
 	std::vector<char> ReadFile(const std::string& filename);
 
