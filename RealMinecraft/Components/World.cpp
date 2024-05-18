@@ -15,6 +15,7 @@ World::World(real::GameObject* pOwner)
 
 void World::Start()
 {
+#ifndef SINGLE_CHUNK
 	for (int x = -render_distance; x < render_distance + 1; ++x)
 	{
 		for (int z = -render_distance; z < render_distance + 1; ++z)
@@ -24,7 +25,11 @@ void World::Start()
 			m_pChunks[glm::vec2{ chunkPos.x, chunkPos.z }] = go.AddComponent<Chunk>();
 		}
 	}
-
+#else
+	const auto chunkPos = glm::vec3(0, 0, 0);
+	auto& go = GetOwner()->CreateGameObject({ chunkPos });
+	m_pChunks[glm::vec2{ chunkPos.x, chunkPos.z }] = go.AddComponent<Chunk>();
+#endif // SINGLE_CHUNK
 	real::SceneManager::GetInstance().GetActiveScene().GetGameObject(1)->GetComponent<Player>()->playerPosChanged.AddObserver(this);
 }
 
@@ -39,6 +44,10 @@ void World::Kill()
 
 void World::HandleEvent(const glm::ivec2& chunkPos)
 {
+#ifdef SINGLE_CHUNK
+	return;
+#endif // SINGLE_CHUNK
+
 	const auto id = real::GameTime::GetInstance().StartTimer();
 	std::cout << "In chunk: [" << chunkPos.x << ';' << chunkPos.y << "]\n";
 
