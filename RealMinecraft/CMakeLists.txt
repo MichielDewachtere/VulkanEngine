@@ -35,6 +35,11 @@ set(SOURCES
  
     "Components/Chunk.cpp"
     "Components/Chunk.h"
+    "Components/World.cpp" 
+    "Components/Player.cpp" 
+    
+    "Pipelines/WaterPipeline.h"
+    "Pipelines/WaterPipeline.cpp"
 
     "Commands/MoveCommand.cpp"
     "Commands/MoveCommand.h"
@@ -52,7 +57,7 @@ set(SOURCES
     "Util/NoiseManager.h"
     "Util/SimplexNoise.cpp"
     "Util/SimplexNoise.h"
- "Components/World.cpp" "Components/Player.cpp")
+ "Pipelines/TransparencyPipeline.cpp" "Pipelines/TransparencyPipeline.h" "Pipelines/GlassPipeline.cpp")
 
 add_executable(${PROJECT_NAME} ${SOURCES} ${GLSL_SOURCE_FILES})
 
