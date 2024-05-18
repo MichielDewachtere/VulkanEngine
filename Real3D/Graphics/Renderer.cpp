@@ -132,9 +132,25 @@ void real::Renderer::Draw(const GameContext& context)
 	renderPassInfo.clearValueCount = static_cast<uint32_t>(clearValues.size());
 	renderPassInfo.pClearValues = clearValues.data();
 
-	const auto commandBuffer = CommandPool::GetInstance().GetCommandBuffer(m_CurrentFrame);
+	const auto commandBuffer = CommandPool::GetInstance().GetCommandBuffer()->SetCommandBufferActive(m_CurrentFrame);
 	CommandBuffer::StartRecording(commandBuffer);
 	vkCmdBeginRenderPass(commandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
+
+	VkViewport viewport{};
+	viewport.x = 0.0f;
+	viewport.y = 0.0f;
+	viewport.width = (float)m_pSwapChain->GetExtent().width;
+	viewport.height = (float)m_pSwapChain->GetExtent().height;
+	viewport.minDepth = 0.0f;
+	viewport.maxDepth = 1.0f;
+	vkCmdSetViewport(commandBuffer, 0, 1, &viewport);
+
+	VkRect2D scissor{};
+	scissor.offset = { 0, 0 };
+	scissor.extent = m_pSwapChain->GetExtent();
+	vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
+
+	//TODO: Call SceneManager::Render instead
 
 	for (const auto& pMaterial : MaterialManager::GetInstance().GetMaterials())
 	{
