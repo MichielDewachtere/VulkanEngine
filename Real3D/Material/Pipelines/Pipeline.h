@@ -10,7 +10,7 @@ namespace real
 	class Pipeline
 	{
 	public:
-		Pipeline() = default;
+		explicit Pipeline() = default;
 		virtual ~Pipeline() = default;
 
 		Pipeline(const Pipeline&) = delete;
