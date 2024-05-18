@@ -185,11 +185,13 @@ void BlockParser::FillElement(BlockModel& model, size_t i, const nlohmann::basic
 
 void BlockParser::FillParent(BlockModel& model, const std::string& parent)
 {
-    if (model.parent == EBlockType::block)
+    if (model.parent == EBlockType::block || model.parent == EBlockType::fluidTemp)
     {
         const auto pos = parent.find('/');
         if (pos == std::string::npos)
-            model.parent = name_to_block_type.at(parent);
+        {
+	        model.parent = name_to_block_type.at(parent);
+        }
         else
         {
             const auto type = parent.substr(pos + 1);

@@ -8,7 +8,10 @@ enum class EBlock : int
 	dirt = 2,
 	grassBlock = 3,
 	debug = 4,
-	oakLog = 5
+	oakLog = 5,
+	sand = 6,
+	waterTemp = 7,
+	glass = 8
 };
 
 enum class EBlockType : char
@@ -18,6 +21,7 @@ enum class EBlockType : char
 	cubeAll = 2,
 	cubeBottomTop = 3,
 	cubeColumn = 4,
+	fluidTemp = 5,
 };
 
 enum class EDirection : char

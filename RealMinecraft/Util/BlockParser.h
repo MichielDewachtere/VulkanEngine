@@ -31,7 +31,7 @@ private:
 	friend class Singleton<BlockParser>;
 	explicit BlockParser();
 
-	int m_AmountOfTexX{ 4 }, m_AmountOfTexY{ 4 }, m_TextureSize{ 16 }, m_AtlasSizeX{ 64 }, m_AtlasSizeY{ 64 };
+	int m_AmountOfTexX{ 8 }, m_AmountOfTexY{ 8 }, m_TextureSize{ 16 }, m_AtlasSizeX{ 128 }, m_AtlasSizeY{ 128 };
 	float m_NormalTextureWidth{}, m_NormalTextureHeight{};
 	std::unordered_map<EBlock, BlockModel> m_Blocks;
 	std::unordered_map<EBlockType, BlockModel> m_BlockTypes;
@@ -50,6 +50,9 @@ private:
 		{ EBlock::grassBlock, "grass_block" },
 		{ EBlock::debug, "debug_block" },
 		{ EBlock::oakLog, "oak_log" },
+		{ EBlock::sand, "sand" },
+		{ EBlock::waterTemp, "water_temp" },
+		{ EBlock::glass, "glass" },
 	};
 
 	static inline const std::unordered_map<std::string, EBlockType> name_to_block_type{
@@ -58,6 +61,7 @@ private:
 		{ "cube_all", EBlockType::cubeAll },
 		{ "cube_bottom_top", EBlockType::cubeBottomTop },
 		{ "cube_column", EBlockType::cubeColumn },
+		{ "fluid_temp", EBlockType::fluidTemp},
 	};
 
 	static inline const std::unordered_map<EDirection, glm::vec3> direction_to_normal{
