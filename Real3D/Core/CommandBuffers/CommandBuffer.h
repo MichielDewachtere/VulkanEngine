@@ -21,6 +21,9 @@ namespace real
 		void CreateCommandBuffer(const VulkanContext& context);
 		VkCommandBuffer GetCommandBuffer(uint32_t currentFrame) const { return m_CommandBuffers[currentFrame]; }
 
+		VkCommandBuffer SetCommandBufferActive(uint32_t frame);
+		VkCommandBuffer GetActiveCommandBuffer() const { return m_CommandBuffers[m_ActiveCommandBuffer]; }
+
 		void StartRecording(uint32_t currentFrame) const;
 		static void StartRecording(VkCommandBuffer buffer);
 		void StopRecording(uint32_t currentFrame) const;
@@ -30,6 +33,7 @@ namespace real
 		static void StopSingleTimeCommands(const GameContext& context, VkCommandBuffer commandBuffer);
 
 	private:
+		uint32_t m_ActiveCommandBuffer;
 		std::vector<VkCommandBuffer> m_CommandBuffers{};
 	};
 }

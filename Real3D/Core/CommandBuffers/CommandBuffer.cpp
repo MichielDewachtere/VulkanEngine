@@ -23,6 +23,12 @@ void real::CommandBuffer::CreateCommandBuffer(const VulkanContext& context)
 	}
 }
 
+VkCommandBuffer real::CommandBuffer::SetCommandBufferActive(uint32_t frame)
+{
+	m_ActiveCommandBuffer = frame;
+	return m_CommandBuffers[m_ActiveCommandBuffer];
+}
+
 void real::CommandBuffer::StartRecording(uint32_t currentFrame) const
 {
 	StartRecording(m_CommandBuffers[currentFrame]);

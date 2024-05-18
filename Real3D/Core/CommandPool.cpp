@@ -27,7 +27,17 @@ void real::CommandPool::CleanUp(const GameContext& context) const
 	vkDestroyCommandPool(context.vulkanContext.device, m_CommandPool, nullptr);
 }
 
+real::CommandBuffer* real::CommandPool::GetCommandBuffer() const
+{
+	return m_pCommandBuffer.get();
+}
+
 VkCommandBuffer real::CommandPool::GetCommandBuffer(uint32_t frame) const
 {
 	return m_pCommandBuffer->GetCommandBuffer(frame);
+}
+
+VkCommandBuffer real::CommandPool::GetActiveCommandBuffer() const
+{
+	return m_pCommandBuffer->GetActiveCommandBuffer();
 }

@@ -11,7 +11,7 @@ struct GameContext;
 
 namespace real
 {
-	class CommandPool final : public real::Singleton<CommandPool>
+	class CommandPool final : public Singleton<CommandPool>
 	{
 	public:
 		virtual ~CommandPool() override = default;
@@ -21,7 +21,10 @@ namespace real
 
 		VkCommandPool GetCommandPool() const { return m_CommandPool; }
 
+		CommandBuffer* GetCommandBuffer() const;
+
 		VkCommandBuffer GetCommandBuffer(uint32_t frame) const;
+		VkCommandBuffer GetActiveCommandBuffer() const;
 
 	private:
 		friend class Singleton<CommandPool>;
