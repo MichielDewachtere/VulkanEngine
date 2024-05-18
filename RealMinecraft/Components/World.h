@@ -43,7 +43,7 @@ public:
 	Chunk* GetChunkAt(const glm::ivec2& chunkPos) const;
 
 private:
-	static constexpr inline int render_distance{ 16 };
+	static constexpr inline int render_distance{ 4 };
 
 	std::map<glm::ivec2, Chunk*, Vec2Comparator> m_pChunks{};
 };
