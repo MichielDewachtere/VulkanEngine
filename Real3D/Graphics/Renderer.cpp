@@ -6,9 +6,11 @@
 #include "RealEngine.h"
 #include "RenderPass.h"
 #include "Core/SwapChain.h"
+#include "Core/CommandPool.h"
 #include "Core/CommandBuffers/CommandBuffer.h"
 #include "Core/DepthBuffer/DepthBufferManager.h"
 #include "Material/MaterialManager.h"
+#include "real_core/SceneManager.h"
 
 void real::Renderer::Init(GameContext& context)
 {
@@ -152,11 +154,13 @@ void real::Renderer::Draw(const GameContext& context)
 
 	//TODO: Call SceneManager::Render instead
 
-	for (const auto& pMaterial : MaterialManager::GetInstance().GetMaterials())
-	{
-		if (pMaterial->IsActive())
-			pMaterial->DrawFrame(m_CurrentFrame, m_pSwapChain->GetExtent());
-	}
+	SceneManager::GetInstance().Render();
+
+	//for (const auto& pMaterial : MaterialManager::GetInstance().GetMaterials())
+	//{
+	//	if (pMaterial->IsActive())
+	//		pMaterial->DrawFrame(m_CurrentFrame, m_pSwapChain->GetExtent());
+	//}
 
 	vkCmdEndRenderPass(commandBuffer);
 	CommandBuffer::StopRecording(commandBuffer);
