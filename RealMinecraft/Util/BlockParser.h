@@ -12,8 +12,11 @@
 
 #include "Enumerations.h"
 #include "BlockModel.h"
-#include "GameUtils.h"
-//#include "bimap.hpp"
+#include "FluidParser.h"
+
+// needed for hash function
+#include "Util/GameUtils.h"
+#include "Util/bimap.hpp"
 
 class BlockParser final : public real::Singleton<BlockParser>
 {
@@ -25,10 +28,17 @@ public:
 	BlockParser(BlockParser&& other) = delete;
 	BlockParser& operator=(BlockParser&& rhs) = delete;
 
-	std::vector<real::PosTexNorm> GetFaceData(EDirection dir, EBlock block, glm::vec3 pos);
+	using vertices_and_indices = std::pair<std::vector<real::PosTexNorm>, std::vector<uint32_t>>;
+	vertices_and_indices GetFaceData(EDirection dir, EBlock block, glm::vec3 pos, int indexOffset);
+	vertices_and_indices GetBlockData(EBlock block, glm::vec3 pos, int indexOffset);
+
+	bool IsTransparent(EBlock block);
+	bool IsFullFace(EBlock block, EDirection dir);
+	bool IsCrossBlock(EBlock block);
 
 private:
 	friend class Singleton<BlockParser>;
+	friend class FluidParser;
 	explicit BlockParser();
 
 	int m_AmountOfTexX{ 8 }, m_AmountOfTexY{ 8 }, m_TextureSize{ 16 }, m_AtlasSizeX{ 128 }, m_AtlasSizeY{ 128 };
@@ -37,11 +47,16 @@ private:
 	std::unordered_map<EBlockType, BlockModel> m_BlockTypes;
 
 	static std::vector<glm::vec3> GetVertexPositions(const BlockElement& e, EDirection dir);
+	static std::vector<glm::vec3> GetVertexPositionsCross(const BlockElement& e);
 	glm::vec2 GetTexCoord(int atlasId, int vertexId, EDirection dir, BlockModel model) const;
 
 	void ParseBlock(EBlock block);
 	void FillElement(BlockModel& model, size_t i, const nlohmann::basic_json<>& json) const;
 	static void FillParent(BlockModel& model, const std::string& parent);
+	void RotateElement(BlockElement& element, const nlohmann::basic_json<>& json) const;
+	void FillFaces(BlockElement& element, const nlohmann::basic_json<>& json) const;
+
+	void CalculateVertexData(BlockModel& model) const;
 
 	static inline const std::unordered_map<EBlock, std::string> block_to_name{
 		{ EBlock::air, "air" },
@@ -51,26 +66,39 @@ private:
 		{ EBlock::debug, "debug_block" },
 		{ EBlock::oakLog, "oak_log" },
 		{ EBlock::sand, "sand" },
-		{ EBlock::waterTemp, "water_temp" },
 		{ EBlock::glass, "glass" },
+		{ EBlock::glass, "glass" },
+		{ EBlock::oakLeaves, "oak_leaves" },
+		{ EBlock::poppy, "poppy" },
+		{ EBlock::dandelion, "dandelion" },
 	};
 
 	static inline const std::unordered_map<std::string, EBlockType> name_to_block_type{
-		{ "block", EBlockType::block },
-		{ "cube", EBlockType::cube },
-		{ "cube_all", EBlockType::cubeAll },
-		{ "cube_bottom_top", EBlockType::cubeBottomTop },
-		{ "cube_column", EBlockType::cubeColumn },
-		{ "fluid_temp", EBlockType::fluidTemp},
+		{ "block",			EBlockType::block },
+		{ "cube",				EBlockType::cube },
+		{ "cube_all",			EBlockType::cubeAll },
+		{ "cube_bottom_top",	EBlockType::cubeBottomTop },
+		{ "cube_column",		EBlockType::cubeColumn },
+		{ "cross",			EBlockType::cross },
+	};
+
+	static inline const stde::unordered_map<EDirection, std::string> direction_to_name{
+		{ EDirection::north,	"north"},
+		{ EDirection::east,	"east"},
+		{ EDirection::south,	"south"},
+		{ EDirection::west,	"west"},
+		{ EDirection::up,		"up"},
+		{ EDirection::down,	"down"},
 	};
 
 	static inline const std::unordered_map<EDirection, glm::vec3> direction_to_normal{
-	{EDirection::north,{ 0,0,-1 }},
-	{EDirection::east,{ 1,0,0 }},
+	{EDirection::north,	{ 0,0,-1 }},
+	{EDirection::east,	{ 1,0,0 }},
 	{EDirection::south,	{ 0,0,1 }},
 	{EDirection::west,	{ -1,0,0 }},
-	{EDirection::up,	{ 0,1,0 }},
-	{EDirection::down,{ 0,-1,0 }} };
+	{EDirection::up,		{ 0,1,0 }},
+	{EDirection::down,	{ 0,-1,0 }}
+	};
 
 	using TextureIndexMap = std::unordered_map<std::pair<EBlockType, EDirection>, int>;
 	static inline const TextureIndexMap texture_index_map{
@@ -105,6 +133,12 @@ private:
 		{{EBlockType::cubeColumn, EDirection::west}, 0},
 		{{EBlockType::cubeColumn, EDirection::up}, 1},
 		{{EBlockType::cubeColumn, EDirection::down}, 1},
+
+		// cross
+		{{EBlockType::cross, EDirection::north}, 0},
+		{{EBlockType::cross, EDirection::east}, 0},
+		{{EBlockType::cross, EDirection::south}, 0},
+		{{EBlockType::cross, EDirection::west}, 0},
 	};
 };
 
