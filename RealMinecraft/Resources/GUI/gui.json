@@ -1,0 +1,37 @@
+{
+  "texture": "resources/textures/gui_atlas.png",
+  "elements": [
+    {
+      "name": "crosshair",
+      "uv": [ 23, 22, 38, 37 ],
+      "position": {
+        "x": {
+          "from": "center",
+          "dist": 0,
+          "pivot": "center"
+        },
+        "y": {
+          "from": "center",
+          "dist": 0,
+          "pivot": "center"
+        }
+      }
+    },
+    {
+      "name": "hotbar",
+      "uv": [ 0, 0, 182, 22 ],
+      "position": {
+        "x": {
+          "from": "center",
+          "dist": 0,
+          "pivot": "center"
+        },
+        "y": {
+          "from": "bottom",
+          "dist": 0,
+          "pivot": "bottom"
+        }
+      }
+    }
+  ]
+}

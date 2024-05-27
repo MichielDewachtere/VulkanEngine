@@ -1,0 +1,32 @@
+{
+  "parent": "block",
+  "elements": [
+    {
+      "from": [ 0.8, 0, 8 ],
+      "to": [ 15.2, 16, 8 ],
+      "rotation": {
+        "origin": [ 8, 8, 8 ],
+        "axis": "y",
+        "angle": 45
+      },
+      "faces": {
+        "north": { "full_face": false },
+        "south": { "full_face": false }
+      }
+    },
+    {
+      "from": [ 8, 0, 0.8 ],
+      "to": [ 8, 16, 15.2 ],
+      "rotation": {
+        "origin": [ 8, 8, 8 ],
+        "axis": "y",
+        "angle": 45
+      },
+      "faces": {
+        "east": { "full_face": false },
+        "west": { "full_face": false }
+      }
+    }
+  ],
+  "transparent": true
+}

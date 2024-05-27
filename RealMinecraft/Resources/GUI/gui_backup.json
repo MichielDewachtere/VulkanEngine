@@ -1,0 +1,59 @@
+{
+  "texture": "resources/textures/gui_atlas.png",
+  "elements": [
+    {
+      "name": "hotbar",
+      "uv": [ 0, 0, 182, 22 ],
+      "position": {
+        "x": {
+          "from": "center",
+          "pivot": "center",
+          "dist": 0,
+          "size": 0
+        },
+        "y": {
+          "from": "bottom",
+          "pivot": "bottom",
+          "dist": -25,
+          "size": 0
+        }
+      }
+    },
+    {
+      "name": "hotbar_selection",
+      "uv": [ 0, 22, 23, 44 ],
+      "position": {
+        "x": {
+          "from": "center",
+          "pivot": "left",
+          "dist": -91,
+          "size": 0
+        },
+        "y": {
+          "from": "center",
+          "pivot": "bottom",
+          "dist": -25,
+          "size": 0
+        }
+      }
+    },
+    {
+      "name": "crosshair",
+      "uv": [ 23, 22, 38, 37 ],
+      "position": {
+        "x": {
+          "from": "center",
+          "pivot": "center",
+          "dist": 0,
+          "size": 0
+        },
+        "y": {
+          "from": "center",
+          "pivot": "center",
+          "dist": 0,
+          "size": 0
+        }
+      }
+    }
+  ]
+}
