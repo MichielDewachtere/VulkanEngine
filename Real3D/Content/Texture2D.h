@@ -27,12 +27,17 @@ namespace real
 		VkImageView GetTextureImageView() const { return m_TextureImageView; }
 		VkSampler GetTextureSampler() const { return m_TextureSampler; }
 
+		int GetWidth() const { return m_TextureWidth; }
+		int GetHeight() const { return m_TextureHeight; }
+
 	private:
+		int m_TextureWidth{}, m_TextureHeight{};
 		VkImage m_TextureImage{};
 		VmaAllocation m_TextureAllocation{};
 		//VkDeviceMemory m_TextureImageMemory{};
 		VkImageView m_TextureImageView{};
 		VkSampler m_TextureSampler{};
+
 
 		void CreateTextureImage(const GameContext& context, const std::string& path);
 		void CreateTextureImageView(const GameContext& context);

@@ -40,10 +40,10 @@ void real::Texture2D::CreateTextureImage(const GameContext& context, const std::
         throw std::runtime_error("failed to convert surface to RGBA format!");
     }
 
-    const int texWidth = convertedSurface->w;
-    const int texHeight = convertedSurface->h;
+    m_TextureWidth = convertedSurface->w;
+    m_TextureHeight = convertedSurface->h;
     const int texChannels = convertedSurface->format->BytesPerPixel;
-    const VkDeviceSize imageSize = texWidth * texHeight * texChannels;
+    const VkDeviceSize imageSize = m_TextureWidth * m_TextureHeight * texChannels;
 
     VkBuffer stagingBuffer;
     VmaAllocation stagingBufferAllocation;
@@ -65,12 +65,12 @@ void real::Texture2D::CreateTextureImage(const GameContext& context, const std::
 
     SDL_FreeSurface(convertedSurface);
 
-    CreateImage(context, texWidth, texHeight, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_TILING_OPTIMAL,
+    CreateImage(context, m_TextureWidth, m_TextureHeight, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_TILING_OPTIMAL,
         VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
         m_TextureImage, m_TextureAllocation);
 
     TransitionImageLayout(context, m_TextureImage, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
-    CopyBufferToImage(context, stagingBuffer, m_TextureImage, static_cast<uint32_t>(texWidth), static_cast<uint32_t>(texHeight));
+    CopyBufferToImage(context, stagingBuffer, m_TextureImage, static_cast<uint32_t>(m_TextureWidth), static_cast<uint32_t>(m_TextureHeight));
     TransitionImageLayout(context, m_TextureImage, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 
     vmaDestroyBuffer(context.vulkanContext.allocator, stagingBuffer, stagingBufferAllocation);
