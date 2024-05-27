@@ -106,6 +106,7 @@ namespace real
 		GameObject* GetChildAt(uint32_t index) const;
 		GameObject* GetChild(uint32_t id) const;
 		bool IsChild(GameObject* pGo) const;
+		void MoveChildBack(GameObject* pGo);
 #pragma endregion
 
 		std::vector<GameObject*> GetGameObjectsWithTag(const std::string& tag) const;

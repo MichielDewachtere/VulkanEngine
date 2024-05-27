@@ -125,7 +125,7 @@ namespace real
 		void UpdateLocalPosition();
 		void SetWorldPositionDirty();
 		void SetLocalPositionDirty();
-
+		void SetWorldMatrixDirty();
 		void SetOrientVecDirty();
 		void SetRotationMatrixDirty();
 	};

@@ -60,9 +60,10 @@ void real::Transform::SetLocalPosition(const glm::vec3& localPos)
 {
 	m_LocalPosition = localPos;
 	SetWorldPositionDirty();
+	SetWorldMatrixDirty();
 
 	localPosChanged.Notify(TransformEvent::localPosChanged, m_WorldPosition);
-	m_WorldMatNeedsUpdate = true;
+
 	std::ranges::for_each(GetOwner()->GetChildren(), [](GameObject* go)
 		{
 			go->GetTransform()->SetLocalPositionDirty();
@@ -96,9 +97,9 @@ void real::Transform::SetWorldPosition(const glm::vec3& worldPos)
 {
 	m_WorldPosition = worldPos;
 	SetLocalPositionDirty();
+	SetWorldMatrixDirty();
 
 	worldPosChanged.Notify(TransformEvent::worldPosChanged, m_WorldPosition);
-	m_WorldMatNeedsUpdate = true;
 	std::ranges::for_each(GetOwner()->GetChildren(), [](GameObject* go)
 		{
 			go->GetTransform()->SetWorldPositionDirty();
@@ -125,8 +126,8 @@ void real::Transform::Translate(const glm::vec3& translation)
 	m_LocalPosition += translation;
 	localPosChanged.Notify(TransformEvent::localPosChanged, m_LocalPosition);
 
-	m_WorldNeedsUpdate = true;
-	m_WorldMatNeedsUpdate = true;
+	SetWorldPositionDirty();
+	SetWorldMatrixDirty();
 	if (worldPosChanged.GetObservers().empty() == false)
 	{
 		GetWorldPosition();
@@ -167,7 +168,7 @@ void real::Transform::SetScale(const glm::vec2& scale)
 void real::Transform::SetScale(const glm::vec3& scale)
 {
 	m_Scale = scale;
-	m_WorldMatNeedsUpdate = true;
+	SetWorldMatrixDirty();
 	scaleChanged.Notify(TransformEvent::scaleChanged, scale);
 }
 
@@ -198,7 +199,7 @@ void real::Transform::SetRotation(const glm::quat& rotation)
 
 	SetOrientVecDirty();
 	SetRotationMatrixDirty();
-	m_WorldMatNeedsUpdate = true;
+	SetWorldMatrixDirty();
 }
 
 void real::Transform::SetPitch(const float pitch, bool degrees)
@@ -207,7 +208,7 @@ void real::Transform::SetPitch(const float pitch, bool degrees)
 
 	SetOrientVecDirty();
 	SetRotationMatrixDirty();
-	m_WorldMatNeedsUpdate = true;
+	SetWorldMatrixDirty();
 }
 
 void real::Transform::SetYaw(const float yaw, bool degrees)
@@ -216,7 +217,7 @@ void real::Transform::SetYaw(const float yaw, bool degrees)
 
 	SetOrientVecDirty();
 	SetRotationMatrixDirty();
-	m_WorldMatNeedsUpdate = true;
+	SetWorldMatrixDirty();
 }
 
 void real::Transform::SetRoll(const float roll, bool degrees)
@@ -225,7 +226,7 @@ void real::Transform::SetRoll(const float roll, bool degrees)
 
 	SetOrientVecDirty();
 	SetRotationMatrixDirty();
-	m_WorldMatNeedsUpdate = true;
+	SetWorldMatrixDirty();
 }
 
 const glm::mat4& real::Transform::GetWorldMatrix()
@@ -319,6 +320,16 @@ void real::Transform::SetLocalPositionDirty()
 	std::ranges::for_each(GetOwner()->GetChildren(), [](GameObject* go)
 		{
 			go->GetTransform()->SetLocalPositionDirty();
+		});
+}
+
+void real::Transform::SetWorldMatrixDirty()
+{
+	m_WorldMatNeedsUpdate = true;
+
+	std::ranges::for_each(GetOwner()->GetChildren(), [](GameObject* go)
+		{
+			go->GetTransform()->SetWorldMatrixDirty();
 		});
 }
 

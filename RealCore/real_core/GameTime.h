@@ -29,6 +29,8 @@ namespace real
 		[[nodiscard]] uint32_t StartTimer();
 
 		template<typename DurationType = std::chrono::milliseconds>
+		float GetTime(uint32_t id);
+		template<typename DurationType = std::chrono::milliseconds>
 		float EndTimer(uint32_t id);
 
 	private:
@@ -46,17 +48,24 @@ namespace real
 	};
 }
 
-template<typename DurationType>
-float real::GameTime::EndTimer(uint32_t id)
+template <typename DurationType>
+float real::GameTime::GetTime(uint32_t id)
 {
 	const auto endTime = std::chrono::high_resolution_clock::now();
 	const auto duration = endTime - m_Timers[id];
 
-	const auto milliseconds = std::chrono::duration_cast<DurationType>(duration).count();
+	const float time = static_cast<float>(std::chrono::duration_cast<DurationType>(duration).count());
+	return time;
+}
+
+template<typename DurationType>
+float real::GameTime::EndTimer(uint32_t id)
+{
+	const auto time = GetTime<DurationType>(id);
 
 	m_Timers.erase(m_Timers.begin() + id);
 
-	return static_cast<float>(milliseconds);
+	return static_cast<float>(time);
 }
 
 
