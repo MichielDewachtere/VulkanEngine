@@ -13,7 +13,7 @@ namespace real
 	public:
 		static std::pair<std::vector<uint32_t>, std::vector<PosColNorm>> CreatePyramid(const glm::vec3& pos, float height, float baseSize);
 
-		static std::pair<std::vector<uint32_t>, std::vector<PosColNorm>> CreateCube(const glm::vec3& pos, float size);
+		static std::pair<std::vector<uint32_t>, std::vector<PosColNorm>> CreateCube(const glm::vec3& pos, float size, const glm::u8vec3& color);
 		static std::pair<std::vector<uint32_t>, std::vector<PosTexNorm>> CreateCubeMap(const glm::vec3& pos, float size);
 		//static std::pair<std::vector<uint16_t>, std::vector<PosTexNorm>> CreateCubeMap(const glm::vec2& pos, float size);
 	};

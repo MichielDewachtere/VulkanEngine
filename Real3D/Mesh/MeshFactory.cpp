@@ -61,11 +61,14 @@ std::pair<std::vector<uint32_t>, std::vector<real::PosColNorm>> real::MeshFactor
 
 }
 
-std::pair<std::vector<uint32_t>, std::vector<real::PosColNorm>> real::MeshFactory::CreateCube(const glm::vec3& pos, float size)
+std::pair<std::vector<uint32_t>, std::vector<real::PosColNorm>> real::MeshFactory::CreateCube(const glm::vec3& pos, float size, const glm::u8vec3& color)
 {
-	constexpr glm::vec3 red = { 1,0,0 };
-	constexpr glm::vec3 green = { 0,1,0 };
-	constexpr glm::vec3 blue = { 0,0,1 };
+	const glm::vec3 fColor = glm::vec3(color) / 255.f;
+
+	glm::vec3 leftBot = pos;
+	leftBot.z *= -1;
+	glm::vec3 rightTop = pos + glm::vec3(size);
+	rightTop.z *= -1;
 
 	constexpr glm::vec3 front = { 0,0,1 };
 	constexpr glm::vec3 back = { 0,0,-1 };
@@ -77,40 +80,46 @@ std::pair<std::vector<uint32_t>, std::vector<real::PosColNorm>> real::MeshFactor
 	std::vector<PosColNorm> data;
 	std::vector<uint32_t> indices;
 
-	data.push_back({ pos, red, front });
-	data.push_back({ {pos.x + 1, pos.y, pos.z}, red, front });
-	data.push_back({ {pos.x + 1, pos.y + 1, pos.z}, red, front });
-	data.push_back({ {pos.x, pos.y + 1, pos.z}, red, front });
+	// Front
+	data.emplace_back(glm::vec3{ rightTop.x, leftBot.y, rightTop.z }, fColor, front);
+	data.emplace_back(glm::vec3{ leftBot.x, leftBot.y, rightTop.z }, fColor, front);
+	data.emplace_back(glm::vec3{ leftBot.x, rightTop.y, rightTop.z }, fColor, front);
+	data.emplace_back(glm::vec3{ rightTop.x, rightTop.y, rightTop.z }, fColor, front);
 	indices.insert(indices.end(), { 0, 1, 2, 2, 3, 0 });
 
-	data.push_back({ {pos.x, pos.y + 1, pos.z - 1}, red, back });
-	data.push_back({ {pos.x + 1, pos.y + 1, pos.z - 1}, red, back });
-	data.push_back({ {pos.x + 1, pos.y, pos.z - 1}, red, back });
-	data.push_back({ {pos.x, pos.y, pos.z - 1}, red, back });
+	// Left
+	data.emplace_back(glm::vec3{ rightTop.x, leftBot.y, leftBot.z }, fColor, left);
+	data.emplace_back(glm::vec3{ rightTop.x, leftBot.y, rightTop.z }, fColor, left);
+	data.emplace_back(glm::vec3{ rightTop.x, rightTop.y, rightTop.z }, fColor, left);
+	data.emplace_back(glm::vec3{ rightTop.x, rightTop.y, leftBot.z }, fColor, left);
 	indices.insert(indices.end(), { 4, 5, 6, 6, 7, 4 });
-
-	data.push_back({ {pos.x, pos.y, pos.z - 1}, green, left });
-	data.push_back({ {pos.x, pos.y, pos.z}, green, left });
-	data.push_back({ {pos.x, pos.y + 1, pos.z}, green, left });
-	data.push_back({ {pos.x, pos.y + 1, pos.z - 1}, green, left });
+	
+	// Back
+	data.emplace_back(glm::vec3{ leftBot.x, leftBot.y, leftBot.z }, fColor, back);
+	data.emplace_back(glm::vec3{ rightTop.x, leftBot.y, leftBot.z }, fColor, back);
+	data.emplace_back(glm::vec3{ rightTop.x, rightTop.y, leftBot.z }, fColor, back);
+	data.emplace_back(glm::vec3{ leftBot.x, rightTop.y, leftBot.z }, fColor, back);
 	indices.insert(indices.end(), { 8, 9, 10, 10, 11, 8 });
-
-	data.push_back({ {pos.x + 1, pos.y, pos.z}, green, right });
-	data.push_back({ {pos.x + 1, pos.y, pos.z - 1}, green, right });
-	data.push_back({ {pos.x + 1, pos.y + 1, pos.z - 1}, green, right });
-	data.push_back({ {pos.x + 1, pos.y + 1, pos.z}, green, right });
+	
+	// Right
+	data.emplace_back(glm::vec3{ leftBot.x, leftBot.y, rightTop.z }, fColor, right);
+	data.emplace_back(glm::vec3{ leftBot.x, leftBot.y, leftBot.z }, fColor, right);
+	data.emplace_back(glm::vec3{ leftBot.x, rightTop.y, leftBot.z }, fColor, right);
+	data.emplace_back(glm::vec3{ leftBot.x, rightTop.y, rightTop.z }, fColor, right);
 	indices.insert(indices.end(), { 12, 13, 14, 14, 15, 12 });
-
-	data.push_back({ {pos.x, pos.y + 1, pos.z}, blue, top });
-	data.push_back({ {pos.x + 1, pos.y + 1, pos.z}, blue, top });
-	data.push_back({ {pos.x + 1, pos.y + 1, pos.z - 1}, blue, top });
-	data.push_back({ {pos.x, pos.y + 1, pos.z - 1}, blue, top });
+	
+	// Top
+	data.emplace_back(glm::vec3{ leftBot.x, rightTop.y, leftBot.z }, fColor, top);
+	data.emplace_back(glm::vec3{ rightTop.x, rightTop.y, leftBot.z }, fColor, top);
+	data.emplace_back(glm::vec3{ rightTop.x, rightTop.y, rightTop.z }, fColor, top);
+	data.emplace_back(glm::vec3{ leftBot.x, rightTop.y, rightTop.z }, fColor, top);
 	indices.insert(indices.end(), { 16, 17, 18, 18, 19, 16 });
-
-	data.push_back({ {pos.x, pos.y, pos.z - 1}, blue, bottom });
-	data.push_back({ {pos.x + 1, pos.y, pos.z - 1}, blue, bottom });
-	data.push_back({ {pos.x + 1, pos.y, pos.z}, blue, bottom });
-	data.push_back({ {pos.x, pos.y, pos.z}, blue, bottom });
+	
+	// Bottom
+	data.emplace_back(glm::vec3{ leftBot.x, leftBot.y, rightTop.z }, fColor, bottom);
+	data.emplace_back(glm::vec3{ rightTop.x, leftBot.y, rightTop.z }, fColor, bottom);
+	data.emplace_back(glm::vec3{ rightTop.x, leftBot.y, leftBot.z }, fColor, bottom);
+	data.emplace_back(glm::vec3{ leftBot.x, leftBot.y, leftBot.z }, fColor, bottom);
 	indices.insert(indices.end(), { 20, 21, 22, 22, 23, 20 });
 
 	return std::make_pair(indices, data);

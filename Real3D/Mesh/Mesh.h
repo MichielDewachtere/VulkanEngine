@@ -6,12 +6,8 @@
 #include <glm/gtc/type_ptr.hpp>
 #include <vulkan/vulkan_core.h>
 
-#include <real_core/Component.h>
-#include <real_core/DrawableComponent.h>
 #include <real_core/GameObject.h>
 
-#include "Misc/CameraManager.h"
-#include "Misc/Camera.h"
 #include "Core/CommandPool.h"
 #include "Content/ContentManager.h"
 #include "Util/Concepts.h"
@@ -21,36 +17,33 @@
 
 #include "Util/vk_mem_alloc.h"
 
+#include "BaseMesh.h"
+
 namespace real
 {
-	struct MeshInfo
-	{
-		uint32_t vertexCapacity = 0, indexCapacity = 0;
-		Texture2D* texture = nullptr;
-		bool usesUbo = false;
-	};
-
-	template <typename T>
-	struct BufferContext
-	{
-		bool isDirty = false;
-		VkBuffer buffer{ nullptr };
-		VmaAllocation allocation{ nullptr };
-		std::vector<T> data{};
-	};
-
-	template <vertex_type V>
-	class Mesh : public DrawableComponent
+	template <vertex_type V, typename Ubo>
+	class Mesh : public BaseMesh
 	{
 	public:
 		explicit Mesh(real::GameObject* pOwner, MeshInfo info)
-			: DrawableComponent(pOwner)
-			, m_Info(info)
+			: BaseMesh(pOwner, info)
 		{
 			m_VertexBuffers.push_back({});
 		}
 
-		virtual ~Mesh() override = default;
+		virtual ~Mesh() override
+		{
+			const auto context = RealEngine::GetGameContext();
+
+			for (auto& vertexBuffer : m_VertexBuffers)
+			{
+				if (vertexBuffer.buffer != nullptr)
+				{
+					vmaDestroyBuffer(context.vulkanContext.allocator, vertexBuffer.buffer, vertexBuffer.allocation);
+					vertexBuffer.buffer = nullptr;
+				}
+			}
+		}
 
 		Mesh(const Mesh&) = delete;
 		Mesh& operator=(const Mesh&) = delete;
@@ -69,9 +62,9 @@ namespace real
 
 			for (auto& [isDirty, buffer, memory, data] : m_VertexBuffers)
 			{
-				if (isDirty)
+				if (isDirty && data.empty() == false)
 				{
-					Mesh<V>::UpdateVertexBuffer(data, buffer);
+					UpdateVertexBuffer(data, buffer);
 					isDirty = false;
 				}
 			}
@@ -82,7 +75,8 @@ namespace real
 		{
 			const auto commandBuffer = CommandPool::GetInstance().GetActiveCommandBuffer();
 
-
+			m_pMaterial->Bind(commandBuffer, m_Reference);
+			m_pMaterial->UpdateShaderVariables(this, m_Reference);
 
 			const auto buffers = GetAllVertexBuffers();
 			const std::vector<VkDeviceSize> offsets(buffers.size(), 0);
@@ -96,68 +90,16 @@ namespace real
 		{
 			const auto context = RealEngine::GetGameContext();
 
-			for (size_t i = 0; i < m_UniformBuffers.size(); i++)
-			{
-				vmaUnmapMemory(context.vulkanContext.allocator, m_UniformBufferAllocations[i]);
-				vmaDestroyBuffer(context.vulkanContext.allocator, m_UniformBuffers[i], m_UniformBufferAllocations[i]);
-			}
+			m_pMaterial->CleanUpUbo(m_Reference);
 
-			for (const auto& vertexBuffer : m_VertexBuffers)
+			for (auto& vertexBuffer : m_VertexBuffers)
 			{
 				vmaDestroyBuffer(context.vulkanContext.allocator, vertexBuffer.buffer, vertexBuffer.allocation);
-			}
-
-			if (m_Info.usesUbo)
-			{
-				vkDestroyDescriptorPool(context.vulkanContext.device, m_DescriptorPool, nullptr);
+				vertexBuffer.buffer = nullptr;
 			}
 		}
 
-		void CreateDescriptor(const GameContext& context, VkDescriptorSetLayout layout)
-		{
-			if (m_Info.usesUbo == false)
-				return;
-
-			CreateUniformBuffers(context);
-			CreateDescriptorPool(context);
-			CreateDescriptorSets(context, layout);
-		}
-
-		void UpdateUbo(uint32_t currentFrame, VkCommandBuffer buffer, VkPipelineLayout layout) const
-		{
-			if (m_Info.usesUbo == false)
-				return;
-
-			UniformBufferObject ubo{};
-			ubo.model = GetOwner()->GetTransform()->GetWorldMatrix();
-			ubo.proj = CameraManager::GetInstance().GetActiveCamera()->GetProjection();
-			ubo.proj[1][1] *= -1;
-			ubo.view = CameraManager::GetInstance().GetActiveCamera()->GetView();
-
-			memcpy(m_UniformBuffersMapped[currentFrame], &ubo, sizeof(UniformBufferObject));
-
-			vkCmdBindDescriptorSets(buffer,
-				VK_PIPELINE_BIND_POINT_GRAPHICS,
-				layout,
-				0,
-				1,
-				&m_DescriptorSets[currentFrame],
-				0,
-				nullptr
-			);
-		}
-
-		virtual void Draw(VkCommandBuffer /*commandBuffer*/)
-		{
-			const auto commandBuffer = CommandPool::GetInstance().GetActiveCommandBuffer();
-
-			const auto buffers = GetAllVertexBuffers();
-			const std::vector<VkDeviceSize> offsets(buffers.size(), 0);
-			vkCmdBindVertexBuffers(commandBuffer, 0, static_cast<uint32_t>(buffers.size()), buffers.data(), offsets.data());
-
-			const auto vertices = GetAllVertices();
-			vkCmdDraw(commandBuffer, static_cast<uint32_t>(vertices.size()), 1, 0, 0);
-		}
+		void SetMaterial(Material<Ubo>* material);
 
 		void AddVertex(V vertex)
 		{
@@ -183,7 +125,7 @@ namespace real
 				while (!v.empty())
 				{
 					m_VertexBuffers.push_back({});
-					fillUntilSize(v, m_VertexBuffers.back().data, m_Info.vertexCapacity);
+					FillUntilSize(v, m_VertexBuffers.back().data, m_Info.vertexCapacity);
 					CreateVertexBuffer(RealEngine::GetGameContext(), m_VertexBuffers.size() - 1);
 					m_VertexBuffers.back().isDirty = true;
 				}
@@ -195,7 +137,7 @@ namespace real
 			}
 			else
 			{
-				fillUntilSize(v, m_VertexBuffers.back().data, m_Info.vertexCapacity);
+				FillUntilSize(v, m_VertexBuffers.back().data, m_Info.vertexCapacity);
 				m_VertexBuffers.back().isDirty = true;
 
 				addVertexBuffers();
@@ -219,7 +161,7 @@ namespace real
 
 				m_VertexBuffers[counter].data.clear();
 
-				fillUntilSize(v, m_VertexBuffers[counter].data, m_Info.vertexCapacity);
+				FillUntilSize(v, m_VertexBuffers[counter].data, m_Info.vertexCapacity);
 				if (createNewBuffer)
 					CreateVertexBuffer(RealEngine::GetGameContext(), counter);
 				m_VertexBuffers[counter].isDirty = true;
@@ -243,20 +185,11 @@ namespace real
 		}
 
 	protected:
-		MeshInfo m_Info;
+		Material<Ubo>* m_pMaterial{ nullptr };
+		uint32_t m_Reference{ 0 };
 
 		bool m_VertexBufferIsDirty{ false };
 		std::vector<BufferContext<V>> m_VertexBuffers;
-
-		// Uniform (Constant) buffer
-		std::vector<VkBuffer> m_UniformBuffers{ nullptr };
-		std::vector<VmaAllocation> m_UniformBufferAllocations{ nullptr };
-		std::vector<void*> m_UniformBuffersMapped{ nullptr };
-
-		// TODO: Ask => one per pipeline / one per mesh??
-		// They use same UBO/Samplers but different data
-		VkDescriptorPool m_DescriptorPool{};
-		std::vector<VkDescriptorSet> m_DescriptorSets{};
 
 		void CreateVertexBuffer(const GameContext& context, size_t index)
 		{
@@ -283,113 +216,6 @@ namespace real
 
 			vmaDestroyBuffer(context.vulkanContext.allocator, stagingBuffer, stagingBufferAllocation);
 		}
-		void CreateUniformBuffers(const GameContext& context)
-		{
-			VkDeviceSize bufferSize = sizeof(UniformBufferObject);
-
-			m_UniformBuffers.resize(MAX_FRAMES_IN_FLIGHT);
-			m_UniformBufferAllocations.resize(MAX_FRAMES_IN_FLIGHT);
-			m_UniformBuffersMapped.resize(MAX_FRAMES_IN_FLIGHT);
-
-			for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
-			{
-				CreateBuffer(context, bufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
-					VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, m_UniformBuffers[i],
-					m_UniformBufferAllocations[i]);
-
-				vmaMapMemory(context.vulkanContext.allocator, m_UniformBufferAllocations[i], &m_UniformBuffersMapped[i]);
-			}
-		}
-
-		void CreateDescriptorPool(const GameContext& context)
-		{
-			std::vector<VkDescriptorPoolSize> poolSizes{};
-			if (m_Info.usesUbo)
-				poolSizes.push_back({ VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT) });
-			if (m_Info.texture)
-				poolSizes.push_back({ VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT) });
-
-			if (poolSizes.empty())
-				return;
-
-			VkDescriptorPoolCreateInfo poolInfo{};
-			poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
-			poolInfo.poolSizeCount = static_cast<uint32_t>(poolSizes.size());
-			poolInfo.pPoolSizes = poolSizes.data();
-			poolInfo.maxSets = static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT);
-
-			if (vkCreateDescriptorPool(context.vulkanContext.device, &poolInfo, nullptr, &m_DescriptorPool) != VK_SUCCESS) {
-				throw std::runtime_error("failed to create descriptor pool!");
-			}
-		}
-		void CreateDescriptorSets(const GameContext& context, VkDescriptorSetLayout layout)
-		{
-			const std::vector layouts(MAX_FRAMES_IN_FLIGHT, layout);
-			VkDescriptorSetAllocateInfo allocInfo{};
-			allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
-			allocInfo.descriptorPool = m_DescriptorPool;
-			allocInfo.descriptorSetCount = static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT);
-			allocInfo.pSetLayouts = layouts.data();
-
-			m_DescriptorSets.resize(MAX_FRAMES_IN_FLIGHT);
-			if (vkAllocateDescriptorSets(context.vulkanContext.device, &allocInfo, m_DescriptorSets.data()) != VK_SUCCESS) {
-				throw std::runtime_error("failed to allocate descriptor sets!");
-			}
-
-			for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
-			{
-				VkDescriptorBufferInfo bufferInfo{};
-				if (m_Info.usesUbo)
-				{
-					bufferInfo.buffer = m_UniformBuffers[i];
-					bufferInfo.offset = 0;
-					bufferInfo.range = sizeof(UniformBufferObject);
-				}
-
-				VkDescriptorImageInfo imageInfo{};
-				if (m_Info.texture)
-				{
-					imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-					imageInfo.imageView = m_Info.texture->GetTextureImageView();
-					imageInfo.sampler = m_Info.texture->GetTextureSampler();
-				}
-
-				std::vector<VkWriteDescriptorSet> descriptorWrites{};
-				if (m_Info.usesUbo)
-				{
-					VkWriteDescriptorSet descriptorWrite{};
-					descriptorWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-					descriptorWrite.dstSet = m_DescriptorSets[i];
-					descriptorWrite.dstBinding = 0;
-					descriptorWrite.dstArrayElement = 0;
-					descriptorWrite.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-					descriptorWrite.descriptorCount = 1;
-					descriptorWrite.pBufferInfo = &bufferInfo;
-
-					descriptorWrites.push_back(descriptorWrite);
-				}
-				if (m_Info.texture)
-				{
-					VkWriteDescriptorSet descriptorWrite{};
-					descriptorWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-					descriptorWrite.dstSet = m_DescriptorSets[i];
-					descriptorWrite.dstBinding = 1;
-					descriptorWrite.dstArrayElement = 0;
-					descriptorWrite.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-					descriptorWrite.descriptorCount = 1;
-					descriptorWrite.pImageInfo = &imageInfo;
-
-					descriptorWrites.push_back(descriptorWrite);
-				}
-
-				if (descriptorWrites.empty())
-					return;
-
-				vkUpdateDescriptorSets(context.vulkanContext.device, static_cast<uint32_t>(descriptorWrites.size()),
-									   descriptorWrites.data(), 0, nullptr);
-			}
-		}
-
 
 		template <typename T>
 		static void UpdateBuffer(VmaAllocation allocation, const std::vector<T>& v)
@@ -419,18 +245,7 @@ namespace real
 			vmaDestroyBuffer(context.vulkanContext.allocator, stagingBuffer, stagingBufferAllocation);
 		}
 
-		static void CopyBuffer(const GameContext& context, VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size)
-		{
-			const auto commandBuffer = CommandBuffer::StartSingleTimeCommands(context);
-
-			VkBufferCopy copyRegion;
-			copyRegion.srcOffset = 0; // Optional
-			copyRegion.dstOffset = 0; // Optional
-			copyRegion.size = size;
-			vkCmdCopyBuffer(commandBuffer, srcBuffer, dstBuffer, 1, &copyRegion);
-
-			CommandBuffer::StopSingleTimeCommands(context, commandBuffer);
-		}
+		static void CopyBuffer(const GameContext& context, VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size);
 
 		std::vector<VkBuffer> GetAllVertexBuffers()
 		{
@@ -471,6 +286,25 @@ namespace real
 			}
 		}
 	};
+
+	template <vertex_type V, typename Ubo>
+	void Mesh<V, Ubo>::SetMaterial(Material<Ubo>* material)
+	{
+		m_pMaterial = material;
+		m_Reference = m_pMaterial->AddReference();
+	}
+
+	template <vertex_type V, typename Ubo>
+	void Mesh<V, Ubo>::CopyBuffer(const GameContext& context, VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size)
+	{
+		const auto commandBuffer = CommandBuffer::StartSingleTimeCommands(context);
+
+		VkBufferCopy copyRegion{};
+		copyRegion.size = size;
+		vkCmdCopyBuffer(commandBuffer, srcBuffer, dstBuffer, 1, &copyRegion);
+
+		CommandBuffer::StopSingleTimeCommands(context, commandBuffer);
+	}
 }
 
 #endif // MESH_H
