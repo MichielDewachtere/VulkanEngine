@@ -6,22 +6,33 @@
 #include <real_core/SceneManager.h>
 
 #include <Material/MaterialManager.h>
-#include <Material/Pipelines/PosTexNormPipeline.h>
 
-#include "Pipelines/GlassPipeline.h"
-#include "Pipelines/WaterPipeline.h"
+#include "Materials/DiffuseMaterial.h"
+#include "Materials/GuiMaterial.h"
+#include "Materials/OutlineMaterial.h"
+#include "Materials/TransparentMaterial.h"
+#include "Materials/TranspriteMaterial.h"
+#include "Materials/WaterMaterial.h"
 #include "Scenes/TestScene.h"
+
+#include "Util/GameInfo.h"
 
 void Load()
 {
+	constexpr int seed = 1; // Set seed to a constant value
+	srand(seed); // Seed random number generator
+
 	using namespace real;
 
 	const auto context = RealEngine::GetGameContext();
 
 	auto& materialManager = MaterialManager::GetInstance();
-	materialManager.AddMaterial<PosTexNormPipeline, PosTexNorm>(context);
-	materialManager.AddMaterial<WaterPipeline, PosTexNorm>(context);
-	materialManager.AddMaterial<GlassPipeline, PosTexNorm>(context);
+	Materials::diffuseMaterial = materialManager.AddMaterial<DiffuseMaterial>(context).first;
+	Materials::waterMaterial = materialManager.AddMaterial<WaterMaterial>(context).first;
+	Materials::transparentMaterial = materialManager.AddMaterial<TransparentMaterial>(context).first;
+	Materials::transpriteMaterial = materialManager.AddMaterial<TranspriteMaterial>(context).first;
+	Materials::outlineMaterial = materialManager.AddMaterial<OutlineMaterial>(context).first;
+	Materials::outlineMaterial = materialManager.AddMaterial<GuiMaterial>(context).first;
 
 	auto& sceneManager = SceneManager::GetInstance();
 
