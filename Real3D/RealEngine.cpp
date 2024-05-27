@@ -11,6 +11,8 @@
 #include <real_core/SceneManager.h>
 
 #include "Core/DepthBuffer/DepthBufferManager.h"
+#include "Content/ContentManager.h"
+#include "Core/CommandPool.h"
 #include "Graphics/ShaderManager.h"
 #include "Material/MaterialManager.h"
 #include "Graphics/Renderer.h"
@@ -18,6 +20,7 @@
 
 #define VK_USE_PLATFORM_WIN32_KHR
 #define VMA_IMPLEMENTATION
+#include "Core/DescriptorPoolManager.h"
 #include "util/vk_mem_alloc.h"
 
 real::RealEngine::RealEngine()
@@ -185,13 +188,15 @@ void real::RealEngine::MainLoop()
 
 void real::RealEngine::CleanUp()
 {
-	real::SceneManager::GetInstance().Destroy();
+	SceneManager::GetInstance().Destroy();
 
+	MaterialManager::GetInstance().CleanUp();
 	Renderer::GetInstance().CleanUp(m_GameContext);
 	DepthBufferManager::GetInstance().CleanUp(m_GameContext);
 	MaterialManager::GetInstance().RemoveMaterials(m_GameContext);
 	ContentManager::GetInstance().CleanUp(m_GameContext);
 	ShaderManager::GetInstance().DestroyShaderModules(m_GameContext.vulkanContext.device);
+	DescriptorPoolManager::GetInstance().CleanUp();
 
 	ImGui_ImplVulkan_Shutdown();
 	ImGui_ImplSDL2_Shutdown();
