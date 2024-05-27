@@ -53,8 +53,8 @@ set(SOURCES
     "Mesh/MeshFactory.cpp"
 
     # Material
-    "Material/Material.cpp"
-    "Material/Material.h"
+    
+    
     "Material/MaterialManager.h" 
     "Material/MaterialManager.cpp"
         # Pipeline
@@ -85,7 +85,15 @@ set(SOURCES
     #ImGui
     "ImGui/imgui_impl_vulkan.cpp"
     "ImGui/imgui_impl_vulkan.h"
- "Util/vk_mem_alloc.h")
+    
+    "Util/vk_mem_alloc.h" 
+
+    "Material/Material.cpp" 
+    "Material/BaseMaterial.cpp"
+
+    "Mesh/BaseMesh.h"
+    "Core/DescriptorPoolManager.cpp"
+ "Material/PipelineBuilder.cpp" "Material/PipelineEnums.h" "Misc/AABB.cpp")
 
 add_library(${PROJECT_NAME} STATIC ${SOURCES})
 
