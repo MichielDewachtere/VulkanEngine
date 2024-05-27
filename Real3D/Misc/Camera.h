@@ -7,7 +7,7 @@
 
 namespace real
 {
-	class Camera final : public real::Component
+	class Camera final : public Component
 	{
 	public:
 		explicit Camera(real::GameObject* pOwner);
@@ -33,8 +33,8 @@ namespace real
 		glm::mat4 m_ViewProjection{};
 		glm::mat4 m_ViewProjectionInverse{};
 
-		float m_FarPlane{}, m_NearPlane{}, m_FOV{};
-		float m_MoveSpeed{ 10.f }, m_SpeedMultiplier{ 2.5f }, m_RotationSpeed{ 600.f };
+		float m_FarFrustumPlane{}, m_NearFrustumPlane{}, m_FOV{};
+		//float m_MoveSpeed{ 10.f }, m_SpeedMultiplier{ 2.5f }, m_RotationSpeed{ 600.f };
 
 		void Init(const GameContext& context);
 

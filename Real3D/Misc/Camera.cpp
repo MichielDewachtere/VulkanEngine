@@ -25,20 +25,15 @@ void real::Camera::Update()
 	CalculateViewMatrix();
 
 	// Combine view and projection matrices
-	const auto viewProjection = m_View * m_Projection;
-
+	m_ViewProjection = m_Projection * m_View;
 	// Calculate the inverse of viewProjection
-	const auto viewProjectionInv = glm::inverse(viewProjection);
-
-	// Assign the matrices
-	m_ViewProjection = viewProjection;
-	m_ViewProjectionInverse = viewProjectionInv;
+	m_ViewProjectionInverse = glm::inverse(m_ViewProjection);
 }
 
 void real::Camera::Init(const GameContext& context)
 {
-	m_FarPlane = 100.0f;
-	m_NearPlane = 0.1f;
+	m_FarFrustumPlane = 1000.0f;
+	m_NearFrustumPlane = 0.1f;
 	m_FOV = 45.0f;
 
 	m_Projection = glm::mat4(1.f);
@@ -64,5 +59,5 @@ void real::Camera::CalculateProjectionMatrix(const GameContext& /*settings*/)
 {
 	const auto [width, height] = Renderer::GetInstance().GetSwapChain()->GetExtent();
 	const float aspectRatio = static_cast<float>(width) / static_cast<float>(height);
-	m_Projection = glm::perspective(glm::radians(m_FOV), aspectRatio, m_NearPlane, m_FarPlane);
+	m_Projection = glm::perspective(glm::radians(m_FOV), aspectRatio, m_NearFrustumPlane, m_FarFrustumPlane);
 }
