@@ -11,7 +11,7 @@ RotateCommand::RotateCommand(int id, int controllerId, real::GameObject* pOwner)
 void RotateCommand::Execute()
 {
 	const auto dt = real::GameTime::GetInstance().GetElapsed();
-	auto v = real::InputManager::GetInstance().GetNormalizedMouseMovement();
+	const auto v = real::InputManager::GetInstance().GetNormalizedMouseMovement();
 
 	const glm::vec2 look = glm::vec2(v.y, v.x) * m_RotationSpeed * dt;
 
@@ -22,5 +22,7 @@ void RotateCommand::Execute()
 	const glm::quat yawQuat = glm::angleAxis(m_Yaw, glm::vec3(0.0f, 1.0f, 0.0f));
 	const glm::quat orientation = glm::normalize(yawQuat * pitchQuat);
 
-	GetGameObject()->GetTransform()->SetRotation(orientation);
+	if (const auto prevOrientation = GetGameObject()->GetTransform()->GetRotation(); 
+		prevOrientation != orientation)
+		GetGameObject()->GetTransform()->SetRotation(orientation);
 }
