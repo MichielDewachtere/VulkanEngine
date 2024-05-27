@@ -26,6 +26,7 @@ add_custom_target(
 # Copy textures to build directory
 file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/resources/textures DESTINATION ${CMAKE_CURRENT_BINARY_DIR}/resources)
 file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/resources/models DESTINATION ${CMAKE_CURRENT_BINARY_DIR}/resources)
+file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/resources/gui DESTINATION ${CMAKE_CURRENT_BINARY_DIR}/resources)
 
 set(SOURCES
     "main.cpp"
@@ -37,27 +38,40 @@ set(SOURCES
     "Components/Chunk.h"
     "Components/World.cpp" 
     "Components/Player.cpp" 
+    "Components/TransparentModel.cpp" 
     
-    "Pipelines/WaterPipeline.h"
-    "Pipelines/WaterPipeline.cpp"
-
     "Commands/MoveCommand.cpp"
     "Commands/MoveCommand.h"
     "Commands/RotateCommand.h" 
     "Commands/RotateCommand.cpp" 
+    "Commands/InteractCommand.cpp" 
 
     "Util/BlockParser.h" 
     "Util/BlockParser.cpp" 
-    "Util/Enumerations.h" 
     "Util/BlockModel.h" 
+    
+    "Util/Enumerations.h" 
     "Util/GameUtils.h"
-    "Util/bimap.hpp"
+    "Util/GameInfo.h" 
     "Util/Macros.h"
+    
+    "Util/FluidParser.cpp" 
+
     "Util/NoiseManager.cpp"
     "Util/NoiseManager.h"
     "Util/SimplexNoise.cpp"
     "Util/SimplexNoise.h"
- "Pipelines/TransparencyPipeline.cpp" "Pipelines/TransparencyPipeline.h" "Pipelines/GlassPipeline.cpp")
+    
+    "Util/bimap.hpp"
+
+    "Materials/DiffuseMaterial.cpp"
+    "Materials/DiffuseMaterial.h"
+    "Materials/WaterMaterial.cpp" 
+    "Materials/TransparentMaterial.cpp" 
+    "Materials/OutlineMaterial.cpp"
+    "Materials/TranspriteMaterial.cpp" 
+
+ "Components/OutlineBlock.cpp" "Components/Gui.cpp" "Materials/GuiMaterial.cpp" "Materials/GuiMaterial.h" "Util/GuiParser.cpp")
 
 add_executable(${PROJECT_NAME} ${SOURCES} ${GLSL_SOURCE_FILES})
 
