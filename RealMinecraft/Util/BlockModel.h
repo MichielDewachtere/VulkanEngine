@@ -1,11 +1,12 @@
-#ifndef GAMESTRUCTS_H
-#define GAMESTRUCTS_H
+#ifndef BLOCKMODEL_H
+#define BLOCKMODEL_H
 
 struct BlockFace
 {
-	//EDirection direction{};
 	//				x1   y1    x2    y2
 	glm::vec4 uv{ 0,0,16,16 };
+	std::array<real::PosTexNorm, 4> vertices;
+	bool isFull{ true };
 };
 
 struct BlockElement
@@ -19,7 +20,8 @@ struct BlockModel
 	EBlockType parent{ EBlockType::block };
 	std::vector<int> textures{};
 	std::vector<BlockElement> elements{};
+	bool transparent{ false }, fullBlock{ true };
 };
 
 
-#endif // GAMESTRUCTS_H
+#endif // BLOCKMODEL_H
