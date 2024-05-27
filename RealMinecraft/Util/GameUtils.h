@@ -4,6 +4,8 @@
 #include <vector>
 #include <functional>
 
+#include "Enumerations.h"
+
 namespace std
 {
     template <>
