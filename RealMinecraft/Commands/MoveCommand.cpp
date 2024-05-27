@@ -21,7 +21,7 @@ void MoveCommand::Execute()
 	const auto transform = GetGameObject()->GetTransform();
 
 	glm::vec3 translation{ 0,0,0 };
-
+	
 	// Normalize the forward vector in the x-z plane
 	const auto forwardXz = glm::normalize(glm::vec3(transform->GetForward().x, 0.0f, transform->GetForward().z));
 	const auto rightXz = glm::normalize(glm::cross(glm::vec3(0, 1, 0), forwardXz));
@@ -31,5 +31,7 @@ void MoveCommand::Execute()
 	translation += rightXz * dt * m_Speed * static_cast<float>(m_Direction.x);
 
 	transform->Translate(translation);
-	m_pPlayerComponent->UpdateChunkPos(glm::ivec3(transform->GetWorldPosition()));
+
+	const auto pos = transform->GetWorldPosition();
+	m_pPlayerComponent->UpdateChunkPos(glm::vec3(pos));
 }

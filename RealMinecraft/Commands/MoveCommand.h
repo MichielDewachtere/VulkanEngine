@@ -22,7 +22,7 @@ public:
 
 private:
 	glm::ivec3 m_Direction{ 0,0, 0 };
-	float m_Speed{ 2 };
+	float m_Speed{ 5 };
 
 	Player* m_pPlayerComponent{ nullptr };
 };
