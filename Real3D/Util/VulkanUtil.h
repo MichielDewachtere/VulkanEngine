@@ -56,7 +56,7 @@ namespace real
 	std::vector<char> ReadFile(const std::string& filename);
 
 	template <typename T>
-	std::vector<T> fillUntilSize(std::vector<T>& src, std::vector<T>& dest, std::size_t targetSize)
+	std::vector<T> FillUntilSize(std::vector<T>& src, std::vector<T>& dest, std::size_t targetSize)
 	{
 		// Determine the number of elements to copy
 		std::size_t numToCopy = std::min(targetSize - dest.size(), src.size());

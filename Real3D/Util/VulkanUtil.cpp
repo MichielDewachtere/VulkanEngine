@@ -1,6 +1,7 @@
 #include "VulkanUtil.h"
 
 #include "vk_mem_alloc.h"
+#include "Core/CommandBuffers/CommandBuffer.h"
 
 VkResult real::CreateDebugUtilsMessengerEXT(VkInstance instance, const VkDebugUtilsMessengerCreateInfoEXT* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkDebugUtilsMessengerEXT* pDebugMessenger) {
 	auto func = (PFN_vkCreateDebugUtilsMessengerEXT)vkGetInstanceProcAddr(instance, "vkCreateDebugUtilsMessengerEXT");
@@ -163,9 +164,6 @@ void real::CreateBuffer(const real::GameContext& context, VkDeviceSize size, VkB
     bufferInfo.usage = usage;
     bufferInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
 
-    //VkMemoryRequirements memRequirements;
-    //vkGetBufferMemoryRequirements(context.vulkanContext.device, buffer, &memRequirements);
-
 	// VMA allocation info
     VmaAllocationCreateInfo allocInfo{};
     allocInfo.usage = VMA_MEMORY_USAGE_GPU_ONLY;
@@ -174,22 +172,6 @@ void real::CreateBuffer(const real::GameContext& context, VkDeviceSize size, VkB
     if (vmaCreateBuffer(context.vulkanContext.allocator, &bufferInfo, &allocInfo, &buffer, &bufferAllocation, nullptr) != VK_SUCCESS) {
         throw std::runtime_error("failed to create buffer with VMA!");
     }
-
-    //if (vkCreateBuffer(context.vulkanContext.device, &bufferInfo, nullptr, &buffer) != VK_SUCCESS) {
-    //    throw std::runtime_error("failed to create buffer!");
-    //}
-
-    //VkMemoryAllocateInfo allocInfo{};
-    //allocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
-    //allocInfo.allocationSize = memRequirements.size;
-    //allocInfo.memoryTypeIndex = FindMemoryType(context, memRequirements.memoryTypeBits, properties);
-
-    //// TODO: This could be improved -> see Conclusion @ https://vulkan-tutorial.com/Vertex_buffers/Staging_buffer
-    //if (vkAllocateMemory(context.vulkanContext.device, &allocInfo, nullptr, &bufferMemory) != VK_SUCCESS) {
-    //    throw std::runtime_error("failed to allocate buffer memory!");
-    //}
-
-    //vkBindBufferMemory(context.vulkanContext.device, buffer, bufferMemory, 0);
 }
 
 VkImageView real::CreateImageView(const real::GameContext& context, VkImage image, VkFormat format)
@@ -211,7 +193,6 @@ VkImageView real::CreateImageView(const real::GameContext& context, VkImage imag
 
     return imageView;
 }
-
 
 std::vector<char> real::ReadFile(const std::string& filename) {
 	std::ifstream file(filename, std::ios::ate | std::ios::binary);
