@@ -11,12 +11,10 @@
 #include "Util/Structs.h"
 #include "Util/Concepts.h"
 
-#include "Material/Material.h"
+#include "BaseMaterial.h"
 
 namespace real
 {
-	class BaseMaterial;
-
 	class MaterialManager final : public real::Singleton<MaterialManager>
 	{
 	public:
@@ -27,11 +25,13 @@ namespace real
 		MaterialManager(MaterialManager&&) = delete;
 		MaterialManager operator=(MaterialManager&&) = delete;
 
-		template <pipeline_type P, vertex_type V>
-		std::pair<uint8_t, Material<P, V>*> AddMaterial(const GameContext& context);
+		void CleanUp();
 
-		template <pipeline_type P, vertex_type V>
-		Material<P, V>* GetMaterial() const;
+		template <typename T>
+		std::pair<uint8_t, T*> AddMaterial(const GameContext& context);
+
+		template <typename T>
+		T* GetMaterial() const;
 		BaseMaterial* GetMaterial(uint8_t id) const;
 		std::vector<BaseMaterial*> GetMaterials() const;
 
@@ -50,23 +50,24 @@ namespace real
 
 #endif // MATERIALMANAGER_H
 
-template <real::pipeline_type P, real::vertex_type V>
-inline std::pair<uint8_t, real::Material<P, V>*> real::MaterialManager::AddMaterial(const GameContext& context)
+template <typename T>
+std::pair<uint8_t, T*> real::MaterialManager::AddMaterial(const GameContext& context)
 {
-	auto pMat = std::make_unique<Material<P, V>>(context.vulkanContext);
-	Material<P, V>* rawPtr = pMat.get();
+	auto pMat = std::make_unique<T>();
+	T* rawPtr = pMat.get();
+	pMat->Init();
 
 	m_pMaterials[++m_NextId] = std::move(pMat);
 
 	return { m_NextId, rawPtr };
 }
 
-template<real::pipeline_type P, real::vertex_type V>
-inline real::Material<P, V>* real::MaterialManager::GetMaterial() const
+template <typename T>
+T* real::MaterialManager::GetMaterial() const
 {
 	for (const auto& base : m_pMaterials | std::views::values)
 	{
-		if (auto mat = dynamic_cast<Material<P, V>*>(base.get()))
+		if (auto mat = dynamic_cast<T*>(base.get()))
 			return mat;
 	}
 

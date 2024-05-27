@@ -2,6 +2,16 @@
 
 #include "BaseMaterial.h"
 
+void real::MaterialManager::CleanUp()
+{
+	for (const auto& mat : m_pMaterials | std::views::values)
+	{
+        mat->CleanUp();
+	}
+
+    m_pMaterials.clear();
+}
+
 real::BaseMaterial* real::MaterialManager::GetMaterial(uint8_t id) const
 {
     return m_pMaterials.at(id).get();
@@ -19,14 +29,14 @@ std::vector<real::BaseMaterial*> real::MaterialManager::GetMaterials() const
 
 void real::MaterialManager::RemoveMaterial(const GameContext& context, uint8_t id)
 {
-    m_pMaterials.at(id)->CleanUp(context);
+    m_pMaterials.at(id)->CleanUp();
     m_pMaterials.erase(id);
 }
 
 void real::MaterialManager::RemoveMaterials(const GameContext& context)
 {
     for (const auto& mat : m_pMaterials | std::views::values)
-        mat->CleanUp(context);
+        mat->CleanUp();
 
 	m_pMaterials.clear();
 }
