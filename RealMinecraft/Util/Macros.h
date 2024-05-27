@@ -4,7 +4,8 @@
 #define CHUNK_SIZE 16
 #define CHUNK_HEIGHT 256
 
-#define WATER_LEVEL 66	
+//#define WATER_LEVEL 66
+#define WATER_LEVEL 60
 
 //#define SINGLE_CHUNK
 
