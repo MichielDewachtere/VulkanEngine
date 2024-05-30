@@ -27,11 +27,13 @@ void InteractCommand::Execute()
     if (m_Place == false)
     {
         auto [chunkPos, blockPos] = m_pOutlineBlockComponent->GetSelectedBlock();
-        m_pWorldComponent->GetChunkAt(chunkPos)->SetBlock(blockPos, EBlock::air);
+        if (const auto pChunk = m_pWorldComponent->GetChunkAt(chunkPos))
+            pChunk->SetBlock(blockPos, EBlock::air);
     }
     else
     {
         auto [chunkPos, blockPos] = m_pOutlineBlockComponent->GetPosToPlace();
-    	m_pWorldComponent->GetChunkAt(chunkPos)->SetBlock(blockPos, EBlock::stone);
+        if (const auto pChunk = m_pWorldComponent->GetChunkAt(chunkPos))
+            pChunk->SetBlock(blockPos, EBlock::stone);
     }
 }
