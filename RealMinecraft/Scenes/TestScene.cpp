@@ -24,6 +24,7 @@
 #include "Misc/CameraManager.h"
 #include "Misc/Camera.h"
 #include "Util/BlockParser.h"
+#include "Util/ChunkParser.h"
 #include "Util/GameStructs.h"
 #include "Util/NoiseManager.h"
 
@@ -37,13 +38,15 @@ void TestScene::Load()
 	using namespace real;
 	const auto context = RealEngine::GetGameContext();
 
-	NoiseManager::GetInstance().Initialize(0);
+	constexpr uint32_t seed = 8887386218;
 
+	NoiseManager::GetInstance().Initialize(seed);
+	ChunkParser::GetInstance().Init(seed);
 
 	auto& world = CreateGameObject();
 	world.GetTransform()->SetLocalPosition({ 0,0,0 });
 
-	const auto worldComponent = world.AddComponent<World>();
+	const auto worldComponent = world.AddComponent<World>(seed);
 
 	constexpr int reach = 10;
 
@@ -61,7 +64,7 @@ void TestScene::Load()
 	transformInfo.position = { 0,0,-4 };
 	auto& block = CreateGameObject(transformInfo);
 	{
-		const auto [indices, vertices] = MeshFactory::CreateCube(glm::ivec3{ -0.001,-0.001,-0.001 }, 1.002, glm::u8vec3{ 0, 0, 0 });
+		const auto [indices, vertices] = MeshFactory::CreateCube(glm::ivec3{ -0.001,-0.001,-0.001 }, 1.002f, glm::u8vec3{ 0, 0, 0 });
 		MeshInfo meshInfo{};
 		meshInfo.indexCapacity = static_cast<uint32_t>(indices.size());
 		meshInfo.vertexCapacity = static_cast<uint32_t>(vertices.size());
