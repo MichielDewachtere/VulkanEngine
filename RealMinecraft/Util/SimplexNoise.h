@@ -10,16 +10,17 @@
 #pragma once
 
 #include <cstddef>  // size_t
+#include <cstdint>
 
- /**
-  * @brief A Perlin Simplex Noise C++ Implementation (1D, 2D, 3D, 4D).
-  */
+/**
+ * @brief A Perlin Simplex Noise C++ Implementation (1D, 2D, 3D, 4D).
+ */
 class SimplexNoise {
 public:
     // 1D Perlin simplex noise
     static float noise(double x);
     // 2D Perlin simplex noise
-    static float noise(double x, double y);
+    float noise(double x, double y) const;
     // 3D Perlin simplex noise
     static float noise(double x, double y, double z);
 
@@ -35,15 +36,19 @@ public:
      * @param[in] amplitude    Amplitude ("height") of the first octave of noise (default to 1.0)
      * @param[in] lacunarity   Lacunarity specifies the frequency multiplier between successive octaves (default to 2.0).
      * @param[in] persistence  Persistence is the loss of amplitude between successive octaves (usually 1/lacunarity)
+     * @param[in] seed         Seed is the seed
      */
     explicit SimplexNoise(float frequency = 1.0f,
         float amplitude = 1.0f,
         float lacunarity = 2.0f,
-        float persistence = 0.5f) :
+        float persistence = 0.5f,
+        uint32_t seed = 0) :
         mFrequency(frequency),
         mAmplitude(amplitude),
         mLacunarity(lacunarity),
-        mPersistence(persistence) {
+        mPersistence(persistence)
+    {
+        mSeed = seed;
     }
 
 private:
@@ -51,5 +56,7 @@ private:
     float mFrequency;   ///< Frequency ("width") of the first octave of noise (default to 1.0)
     float mAmplitude;   ///< Amplitude ("height") of the first octave of noise (default to 1.0)
     float mLacunarity;  ///< Lacunarity specifies the frequency multiplier between successive octaves (default to 2.0).
-    float mPersistence; ///< Persistence is the loss of amplitude between successive octaves (usually 1/lacunarity)
+	float mPersistence; ///< Persistence is the loss of amplitude between successive octaves (usually 1/lacunarity)
+
+    uint32_t mSeed;
 };

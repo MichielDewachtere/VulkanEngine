@@ -26,8 +26,6 @@
 
 #include "SimplexNoise.h"
 
-#include <cstdint>  // int32_t/uint8_t
-
  /**
   * Computes the largest integer value not greater than the float one
   *
@@ -98,6 +96,14 @@ static const uint8_t perm[256] = {
  */
 static inline uint8_t hash(int32_t i) {
     return perm[static_cast<uint8_t>(i)];
+}
+
+// Custom function
+static inline uint8_t hash_seeded(uint32_t i, uint32_t seed)
+{
+    i ^= seed;
+    i = (i << 13) ^ i;
+    return static_cast<uint8_t>((i * (i * i * 15731 + 789221) + 1376312589) & 0xFF);
 }
 
 /* NOTE Gradient table to test if lookup-table are more efficient than calculs
@@ -211,7 +217,8 @@ float SimplexNoise::noise(double x) {
  *
  * @return Noise value in the range[-1; 1], value of 0 on all integer coordinates.
  */
-float SimplexNoise::noise(double x, double y) {
+float SimplexNoise::noise(double x, double y) const
+{
     double n0, n1, n2;   // Noise contributions from the three corners
 
     // Skewing/Unskewing factors for 2D
@@ -254,9 +261,9 @@ float SimplexNoise::noise(double x, double y) {
     const double y2 = y0 - 1.0 + 2.0 * G2;
 
     // Work out the hashed gradient indices of the three simplex corners
-    const int gi0 = hash(i + hash(j));
-    const int gi1 = hash(i + i1 + hash(j + j1));
-    const int gi2 = hash(i + 1 + hash(j + 1));
+    const int gi0 = hash_seeded(i + hash_seeded(j, mSeed), mSeed);
+    const int gi1 = hash_seeded(i + i1 + hash_seeded(j + j1, mSeed), mSeed);
+    const int gi2 = hash_seeded(i + 1 + hash_seeded(j + 1, mSeed), mSeed);
 
     // Calculate the contribution from the first corner
     double t0 = 0.5 - x0 * x0 - y0 * y0;
