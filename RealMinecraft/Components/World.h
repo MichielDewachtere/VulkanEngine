@@ -3,6 +3,7 @@
 
 #include <deque>
 #include <map>
+#include <set>
 #include <vector>
 
 #include <glm/vec2.hpp>
@@ -35,7 +36,7 @@ class World final
 	, public real::Observer<Player::Events, const glm::ivec3&>
 {
 public:
-	explicit World(real::GameObject* pOwner);
+	explicit World(real::GameObject* pOwner, uint32_t seed);
 	virtual ~World() override = default;
 
 	World(const World& other) = delete;
@@ -55,8 +56,11 @@ public:
 	Chunk* GetChunkAt(const glm::ivec2& chunkPos) const;
 	void AddBlocksForFutureChunks(const glm::ivec2& chunkPos, const std::vector<std::pair<glm::ivec3, EBlock>>& blocks);
 
+	uint32_t GetSeed() const { return m_Seed; }
+
 private:
-	static constexpr inline int render_distance{ 12 };
+	static constexpr inline int render_distance{ 4 };
+	uint32_t m_Seed;
 	bool m_IsDirty{ true }, m_FirstFrame{ true };
 	glm::ivec2 m_CurrentChunkPos{ 0,0 };
 
@@ -66,6 +70,8 @@ private:
 	std::deque<std::tuple<glm::ivec2, glm::ivec2, glm::ivec2>> m_ChunksToAdd{};
 
 	void SortChunks(const glm::ivec2& center);
+
+	//void AddingChunks();
 };
 
 #endif // WORLD_H

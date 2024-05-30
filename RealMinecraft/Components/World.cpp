@@ -3,16 +3,17 @@
 #include <ranges>
 #include <real_core/GameObject.h>
 
-#include "Player.h"
 #include "Util/Macros.h"
 #include "Components/Chunk.h"
 #include "real_core/GameTime.h"
 #include "real_core/SceneManager.h"
 
-World::World(real::GameObject* pOwner)
+World::World(real::GameObject* pOwner, uint32_t seed)
 	: Component(pOwner)
+	, m_Seed(seed)
 {
 }
+
 
 void World::Start()
 {
@@ -59,13 +60,15 @@ void World::Update()
 	else
 		m_pChunks[chunkPos] = go.AddComponent<Chunk>();
 
-	m_pChunks.at(adjacentChunk)->UpdateChunkBoarder(m_pChunks.at(chunkPos), direction);
+	if (m_pChunks.contains(adjacentChunk))
+		m_pChunks.at(adjacentChunk)->UpdateChunkBoarder(m_pChunks.at(chunkPos), direction * -1);
 
 	// Also update the previously added chunk
-	const auto otherDir = glm::ivec2{ direction.y * -1, direction.x * -1 };
-	const auto otherChunkPos = chunkPos - otherDir;
+	const auto otherDir = glm::ivec2{ direction.y < 0 ? direction.y : -direction.y,
+		direction.x < 0 ? direction.x : -direction.x };
+	const auto otherChunkPos = chunkPos + otherDir;
 	if (m_pChunks.contains(otherChunkPos))
-		m_pChunks.at(otherChunkPos)->UpdateChunkBoarder(m_pChunks.at(chunkPos), otherDir);
+		m_pChunks.at(otherChunkPos)->UpdateChunkBoarder(m_pChunks.at(chunkPos), otherDir * -1);
 
 	m_IsDirty = true;
 }
@@ -99,9 +102,9 @@ void World::HandleEvent(Player::Events, const glm::ivec2& chunkPos)
 #endif // SINGLE_CHUNK
 
 	m_pChunks.at(m_CurrentChunkPos)->SetAsCenter(false);
-	m_CurrentChunkPos = chunkPos * CHUNK_SIZE;
-	m_pChunks.at(m_CurrentChunkPos)->SetAsCenter(true);
-	m_IsDirty = true;
+		m_CurrentChunkPos = chunkPos * CHUNK_SIZE;
+		m_pChunks.at(m_CurrentChunkPos)->SetAsCenter(true);
+		m_IsDirty = true;
 
 	const auto maxX = (chunkPos.x + render_distance) * CHUNK_SIZE;
 	const auto minX = (chunkPos.x - render_distance) * CHUNK_SIZE;
@@ -109,31 +112,29 @@ void World::HandleEvent(Player::Events, const glm::ivec2& chunkPos)
 	const auto minY = (chunkPos.y - render_distance) * CHUNK_SIZE;
 	constexpr int chunkShift = (render_distance * 2 + 1) * CHUNK_SIZE;
 
-	constexpr int add = 0, remove = 1, update = 2;
-	//std::vector<std::pair<glm::ivec2, int>> dirtyChunks;
+	constexpr int add = 0, remove = 1;
 	std::map<int, std::vector<glm::ivec2>> dirtyChunks;
 
 	// Register chunks to add/delete/update
+	glm::ivec2 direction = { 0,0 };
 	for (const auto& pos : m_pChunks | std::views::keys)
 	{
 		glm::ivec2 newPos = pos;
-		glm::ivec2 chunkToUpdate = pos;
 		bool toAdd = false;
 
 		if (pos.x > maxX || pos.x < minX)
 		{
-			newPos.x += (pos.x > maxX ? -chunkShift : chunkShift);
-			chunkToUpdate.x = newPos.x + (pos.x < maxX ? -CHUNK_SIZE : CHUNK_SIZE);
+			newPos.x += pos.x > maxX ? -chunkShift : chunkShift;
+			direction.x = pos.x > maxX ? CHUNK_SIZE : -CHUNK_SIZE;
 
 			toAdd = true;
 			dirtyChunks[remove].push_back(pos);
-			//dirtyChunks.push_back({ pos,remove });
 		}
 
 		if (pos.y > maxY || pos.y < minY)
 		{
-			newPos.y += (pos.y > maxY ? -chunkShift : chunkShift);
-			chunkToUpdate.y = newPos.y + (pos.y < maxY ? -CHUNK_SIZE : CHUNK_SIZE);
+			newPos.y += pos.y > maxY ? -chunkShift : chunkShift;
+			direction.y = pos.y > maxY ? CHUNK_SIZE : -CHUNK_SIZE;
 
 			toAdd = true;
 
@@ -142,26 +143,8 @@ void World::HandleEvent(Player::Events, const glm::ivec2& chunkPos)
 		}
 
 		if (toAdd)
-		{
 			dirtyChunks[add].push_back(newPos);
-
-			if (chunkToUpdate.x == pos.x || chunkToUpdate.y == pos.y)
-				dirtyChunks[update].push_back(chunkToUpdate);
-		}
 	}
-
-	glm::ivec2 direction;
-	if (dirtyChunks[add].empty())
-		return;
-
-	if (dirtyChunks[add].front().x < dirtyChunks[update].front().x)
-		direction = { -CHUNK_SIZE,0 };
-	else if (dirtyChunks[add].front().x > dirtyChunks[update].front().x)
-		direction = { CHUNK_SIZE,0 };
-	else if (dirtyChunks[add].front().y < dirtyChunks[update].front().y)
-		direction = { 0,-CHUNK_SIZE };
-	else if (dirtyChunks[add].front().y > dirtyChunks[update].front().y)
-		direction = { 0,CHUNK_SIZE };
 
 	for (const auto& [state, chunks] : dirtyChunks)
 	{
@@ -169,10 +152,11 @@ void World::HandleEvent(Player::Events, const glm::ivec2& chunkPos)
 		{
 		case add:
 		{
-			//std::ranges::for_each(chunks, [this](const glm::ivec2& pos)
-			//	{
-			//		m_ChunksToAdd[pos] = {};
-			//	});
+			std::ranges::for_each(chunks, [this, direction](const glm::ivec2& pos)
+				{
+					const auto adjacentChunk = pos + direction;
+					m_ChunksToAdd.emplace_back(pos, adjacentChunk, direction);
+				});
 			break;
 		}
 		case remove:
@@ -181,15 +165,6 @@ void World::HandleEvent(Player::Events, const glm::ivec2& chunkPos)
 				{
 					m_pChunks[pos]->GetOwner()->Destroy();
 					m_pChunks.erase(glm::vec2{ pos.x, pos.y });
-				});
-			break;
-		}
-		case update:
-		{
-			std::ranges::for_each(chunks, [this, direction](const glm::ivec2& pos)
-				{
-					const auto adjacentChunk = pos + direction;
-					m_ChunksToAdd.emplace_back(adjacentChunk, pos, direction);
 				});
 			break;
 		}
@@ -204,18 +179,6 @@ void World::HandleEvent(Player::Events, const glm::ivec3& playerPos)
 
 Chunk* World::GetChunkAt(const glm::ivec2& chunkPos) const
 {
-	//const auto it = std::ranges::find_if(m_pChunks, [chunkPos](const std::pair<glm::ivec2, Chunk*>& pair)
-	//	{
-	//		return pair.first == chunkPos;
-	//	});
-
-	//if (it != m_pChunks.end())
-	//{
-	//	return it->second;
-	//}
-
-	//return nullptr;
-
 	if (m_pChunks.contains(chunkPos))
 		return m_pChunks.at(chunkPos);
 
@@ -230,10 +193,6 @@ void World::AddBlocksForFutureChunks(const glm::ivec2& chunkPos, const std::vect
 
 void World::SortChunks(const glm::ivec2& center)
 {
-	const auto pChild = GetOwner()->GetScene().GetGameObject(1);
-	const auto pos = pChild->GetTransform()->GetWorldPosition();
-	const glm::vec2 vec2 = { pos.x,pos.z };
-
 	std::vector<std::pair<glm::ivec2, Chunk*>> vec(m_pChunks.begin(), m_pChunks.end());
 
 	std::ranges::sort(vec, [&center](const auto& a, const auto& b)
