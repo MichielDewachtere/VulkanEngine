@@ -14,13 +14,12 @@
 #include "Materials/TranspriteMaterial.h"
 #include "Materials/WaterMaterial.h"
 #include "Scenes/TestScene.h"
-
 #include "Util/GameInfo.h"
 
 void Load()
 {
-	constexpr int seed = 1; // Set seed to a constant value
-	srand(seed); // Seed random number generator
+	//constexpr int seed = 1; // Set seed to a constant value
+	//srand(seed); // Seed random number generator
 
 	using namespace real;
 
