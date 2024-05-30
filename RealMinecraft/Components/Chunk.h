@@ -41,13 +41,15 @@ private:
 	bool m_IsDirty{ false }, m_ChunkIsCenter{ false };
 
 	int m_LowestY{ CHUNK_HEIGHT }, m_HighestY{ 0 };
-	real::AABB m_Aabb;
+	real::AABB m_Aabb{};
 
 	float m_BlockRemoveTime{ 2.f }, m_AccuTime{ 0.f };
 	size_t m_RemoveBlock{ 63 }, m_AddBlock{ 64 };
 
-	std::array<std::array<std::array<EBlock, CHUNK_HEIGHT>, CHUNK_SIZE>, CHUNK_SIZE> m_Blocks{};		
+	using block_array = std::array<std::array<std::array<EBlock, CHUNK_HEIGHT>, CHUNK_SIZE>, CHUNK_SIZE>;
+	block_array m_Blocks{};
 	std::map<glm::vec3, std::pair<bool, std::vector<real::PosTexNorm>>, VecComparator<3, float>> m_RenderedBlocks{};
+	//std::map < glm::vec3, std::pair<EBlock>> m_ChangedBlocks;
 
 	real::MeshIndexed<real::PosTexNorm, real::UniformBufferObject>* m_pSolidMeshComponent{ nullptr };
 
@@ -71,6 +73,11 @@ private:
 	Chunk* GetAdjacentChunk(glm::vec3 outOfScopePos) const;
 
 	static bool IsPosValid(const glm::vec3& pos);
+
+	static int GetDeterministicRandomNumber(int seed, const glm::ivec3& position, int lowerBound, int upperBound);
+	static inline void HashCombine(std::size_t& seed, std::size_t value) {
+		seed ^= value + 0x9e3779b9 + (seed << 6) + (seed >> 2);
+	}
 };
 
 #endif // CHUNK_H

@@ -1,5 +1,6 @@
 #include "Chunk.h"
 
+#include <random>
 #include <real_core/GameObject.h>
 #include <real_core/GameTime.h>
 #include <real_core/Utils.h>
@@ -16,14 +17,17 @@
 #include "Materials/DiffuseMaterial.h"
 #include "Misc/Camera.h"
 #include "Misc/CameraManager.h"
+#include "Util/ChunkParser.h"
 
 Chunk::Chunk(real::GameObject* pOwner, const std::vector<std::pair<glm::ivec3, EBlock>>& blocks)
 	: Component(pOwner)
 {
 	m_pWorldComponent = GetOwner()->GetParent()->GetComponent<World>();
 
-	const auto id = real::GameTime::GetInstance().StartTimer();
+	//const auto id = real::GameTime::GetInstance().StartTimer();
+
 	const auto worldPos = GetOwner()->GetTransform()->GetWorldPosition();
+	const auto chunkPos = glm::ivec2(worldPos.x, worldPos.z);
 
 	for (size_t x = 0; x < m_Blocks.size(); ++x)
 	{
@@ -44,7 +48,6 @@ Chunk::Chunk(real::GameObject* pOwner, const std::vector<std::pair<glm::ivec3, E
 			float terrainNoiseValue = NoiseManager::GetInstance().GetTerrainNoiseValue(adjustedX, adjustedZ, CHUNK_SIZE);
 
 			terrainNoiseValue *= 10.f;
-			//terrainNoiseValue *= 30.f;
 			terrainNoiseValue += 60.f;
 
 			const int yLevel = static_cast<int>(terrainNoiseValue);
@@ -57,8 +60,8 @@ Chunk::Chunk(real::GameObject* pOwner, const std::vector<std::pair<glm::ivec3, E
 			else
 			{
 				m_Blocks[x][z][yLevel] = EBlock::grassBlock;
-				GenerateTree({ x, yLevel, z });
 				GenerateFlower({ x, yLevel, z });
+				GenerateTree({ x, yLevel, z });
 
 				if (x == 8 && z == 8 && m_Blocks[x][z][yLevel + 1] == EBlock::air)
 					m_Blocks[x][z][yLevel + 1] = EBlock::poppy;
@@ -78,7 +81,7 @@ Chunk::Chunk(real::GameObject* pOwner, const std::vector<std::pair<glm::ivec3, E
 #endif // SINGLE_CHUNK
 
 			m_LowestY = std::min(yLevel, m_LowestY);
-			m_HighestY = std::max(yLevel, m_HighestY);
+				m_HighestY = std::max(yLevel, m_HighestY);
 		}
 	}
 
@@ -91,13 +94,14 @@ Chunk::Chunk(real::GameObject* pOwner, const std::vector<std::pair<glm::ivec3, E
 		}
 	}
 
-	m_HighestY = std::max(m_HighestY, WATER_LEVEL);
+	if (ChunkParser::GetInstance().HasChunkData(chunkPos))
+		ChunkParser::GetInstance().LoadChunk(chunkPos, m_Blocks, m_HighestY, m_LowestY);
 
+	m_HighestY = std::max(m_HighestY, WATER_LEVEL);
 	int minYLevel = m_LowestY;
 	int maxYLevel = m_HighestY;
 
 	glm::ivec2 dirs[] = { glm::ivec2{-CHUNK_SIZE,0},glm::ivec2{CHUNK_SIZE,0} ,glm::ivec2{0,-CHUNK_SIZE} ,glm::ivec2{0,CHUNK_SIZE} };
-	const auto chunkPos = glm::ivec2{ worldPos.x, worldPos.z };
 	for (const auto& dir : dirs)
 	{
 		const Chunk* pOtherChunk = m_pWorldComponent->GetChunkAt(chunkPos + dir);
@@ -125,14 +129,13 @@ Chunk::Chunk(real::GameObject* pOwner, const std::vector<std::pair<glm::ivec3, E
 		}
 	}
 
-	const auto activeCamera = real::CameraManager::GetInstance().GetActiveCamera();
-	const auto cameraPos = GetOwner()->GetTransform()->GetWorldPosition();
-	const auto boxMax = cameraPos + glm::vec3{ CHUNK_SIZE, m_HighestY, CHUNK_SIZE };
-
 	real::AABB aabb;
 	aabb.min = worldPos;
 	aabb.max = worldPos + glm::vec3{ CHUNK_SIZE, m_HighestY, CHUNK_SIZE };
 	m_Aabb = aabb;
+
+	//const auto time = real::GameTime::GetInstance().EndTimer<std::chrono::microseconds>(id);
+	//std::cout << "Time to initialize chunk : " << time << " microseconds\n";
 }
 
 void Chunk::Start()
@@ -174,6 +177,8 @@ void Chunk::Update()
 	const auto faces = CalculateTransparentMeshData();
 	m_pTransparentMeshComponent->SetFaces(faces);
 	m_pTransparentMeshComponent->SortFaces(activeCamera->GetOwner()->GetTransform()->GetWorldPosition(), m_ChunkIsCenter);
+
+	//ChunkParser::GetInstance().SaveChunk(glm::ivec2(worldPos.x, worldPos.z), m_Blocks);
 
 	m_IsDirty = false;
 }
@@ -277,10 +282,16 @@ void Chunk::SetBlock(const glm::ivec3& pos, EBlock block)
 	if (IsPosValid(pos) == false)
 		return;
 
-	// TODO: Set block around block dirty
+	if (block != EBlock::air)
+		m_HighestY = std::max(m_HighestY, pos.y);
+
 	m_Blocks[pos.x][pos.z][pos.y] = block;
 	m_RenderedBlocks[pos] = { true,{} };
 
+	const auto worldPos = GetOwner()->GetTransform()->GetWorldPosition();
+	ChunkParser::GetInstance().SaveBlock(glm::ivec2(worldPos.x, worldPos.z), pos, block);
+
+	// Set block around block dirty
 	glm::ivec3 dirs[] = {{ -1,0,0 }, { 1,0,0 }, { 0,1,0 }, { 0,-1,0 }, { 0,0,1 }, { 0,0,-1 }};
 	for (const auto& dir : dirs)
 	{
@@ -291,6 +302,27 @@ void Chunk::SetBlock(const glm::ivec3& pos, EBlock block)
 		if (IsPosValid(posToCheck) 
 			&& m_Blocks[posToCheck.x][posToCheck.z][posToCheck.y] != EBlock::air)
 			m_RenderedBlocks[posToCheck] = { true, {} };
+		else
+		{
+			const auto worldPos = GetOwner()->GetTransform()->GetWorldPosition();
+			const auto chunkPos = glm::ivec2{ worldPos.x, worldPos.z };
+			const auto adjacentChunk = chunkPos + glm::ivec2(dir.x, dir.z) * CHUNK_SIZE;
+
+			const auto pChunk = m_pWorldComponent->GetChunkAt(adjacentChunk);
+			if (pChunk == nullptr)
+				continue;
+
+			glm::ivec3 blockToCheck;
+			blockToCheck.x = dir.x < 0 ? CHUNK_SIZE - 1 : dir.x > 0 ? 0 : pos.x;
+			blockToCheck.y = pos.y;
+			blockToCheck.z = dir.z < 0 ? CHUNK_SIZE - 1 : dir.z > 0 ? 0 : pos.z;
+
+			if (pChunk->IsBlockAir(blockToCheck) == false)
+			{
+				pChunk->m_RenderedBlocks[blockToCheck] = { true, {} };
+				pChunk->m_IsDirty = true;
+			}
+		}
 	}
 
 	m_IsDirty = true;
@@ -544,19 +576,24 @@ void Chunk::InitTransparentChunk()
 
 void Chunk::GenerateTree(const glm::ivec3& pos)
 {
+	if (m_Blocks[pos.x][pos.z][pos.y + 1] != EBlock::air)
+		return;
+
+	const auto worldPos = GetOwner()->GetTransform()->GetWorldPosition();
+
 	{
 		constexpr int x = 1;
-		constexpr int y = 50;
+		constexpr int y = 8;
 
-		if (rand() % y > x)
+		const auto i = GetDeterministicRandomNumber(m_pWorldComponent->GetSeed(), glm::ivec3(worldPos) + pos, x, y);
+		if (i > x)
 			return;
 	}
 
 	using leaves_for_other_chunk = std::unordered_map<glm::ivec2, std::vector<std::pair<glm::ivec3, EBlock>>>;
 	leaves_for_other_chunk map;
 
-	constexpr glm::ivec2 dirs[] = { glm::ivec2{1, 0}/*, glm::ivec2{1, 1}*/, glm::ivec2{0, 1}/*, glm::ivec2{-1, 1}*/, glm::ivec2{-1, 0}/*, glm::ivec2{-1, -1}*/,
-		glm::ivec2{0, -1}/*, glm::ivec2{1, -1} */};
+	constexpr glm::ivec2 dirs[] = { glm::ivec2{1, 0}, glm::ivec2{0, 1}, glm::ivec2{-1, 0}, glm::ivec2{0, -1} };
 	constexpr glm::ivec2 dirsExtended[] = {
 		glm::ivec2{1, 0}, glm::ivec2{1, 1}, glm::ivec2{0, 1}, glm::ivec2{-1, 1}, glm::ivec2{-1, 0}, glm::ivec2{-1, -1},
 		glm::ivec2{0, -1}, glm::ivec2{1, -1}, glm::ivec2{2, 0}, glm::ivec2{2, 1}, glm::ivec2{2, 2}, glm::ivec2{1, 2},
@@ -583,19 +620,22 @@ void Chunk::GenerateTree(const glm::ivec3& pos)
 			{
 				const int blockX = (x < 0) ? CHUNK_SIZE - 1 : (x >= CHUNK_SIZE) ? 0 : x;
 				const int blockZ = (z < 0) ? CHUNK_SIZE - 1 : (z >= CHUNK_SIZE) ? 0 : z;
-				if (pOtherChunk->m_Blocks[blockX][blockZ][pos.y + 2] != EBlock::air)
+				if (pOtherChunk->m_Blocks[blockX][blockZ][pos.y + 2] != EBlock::air
+					&& pOtherChunk->m_Blocks[blockX][blockZ][pos.y + 2] != EBlock::oakLeaves)
 					return;
 			}
 		}
 	}
+
+	m_Blocks[pos.x][pos.z][pos.y] = EBlock::dirt;
 
 	constexpr int maxHeight = 5;
 	constexpr int minHeight = 4;
 	int height = 0;
 	for (int i = 1; i <= maxHeight; ++i)
 	{
-		if (i > minHeight)
-		if (rand() % 2 == 1)
+		if (i > minHeight 
+			&& GetDeterministicRandomNumber(m_pWorldComponent->GetSeed(), glm::ivec3(worldPos) + pos, 1, 2) == 1)
 			break;
 
 		++height;
@@ -672,14 +712,17 @@ void Chunk::GenerateTree(const glm::ivec3& pos)
 
 void Chunk::GenerateFlower(const glm::ivec3& pos)
 {
+	const auto worldPos = GetOwner()->GetTransform()->GetWorldPosition();
+
 	if (m_Blocks[pos.x][pos.z][pos.y + 1] != EBlock::air)
 		return;
 
 	{
 		constexpr int x = 1;
-		constexpr int y = 20;
+		constexpr int y = 10;
 
-		if (rand() % y > x)
+		const auto i = GetDeterministicRandomNumber(m_pWorldComponent->GetSeed(), glm::ivec3(worldPos) + pos, x, y);
+		if (i > x)
 			return;
 	}
 	bool poppy;
@@ -687,8 +730,10 @@ void Chunk::GenerateFlower(const glm::ivec3& pos)
 		constexpr int x = 1;
 		constexpr int y = 2;
 
-		poppy = rand() % y == x;
+		const auto i = GetDeterministicRandomNumber(m_pWorldComponent->GetSeed() + 1, glm::ivec3(worldPos) + pos, x, y);
+		poppy = i - 1;
 	}
+
 
 	m_Blocks[pos.x][pos.z][pos.y + 1] = poppy ? EBlock::poppy : EBlock::dandelion;
 }
@@ -721,4 +766,22 @@ bool Chunk::IsPosValid(const glm::vec3& pos)
 	return pos.x >= 0 && pos.x < CHUNK_SIZE
 		&& pos.z >= 0 && pos.z < CHUNK_SIZE
 		&& pos.y >= 0 && pos.y < CHUNK_HEIGHT;
+}
+
+int Chunk::GetDeterministicRandomNumber(int seed, const glm::ivec3& position, int lowerBound, int upperBound)
+{
+	// Combine the hash of the seed and the position coordinates
+	size_t hashValue = std::hash<int>{}(seed);
+	HashCombine(hashValue, std::hash<int>{}(position.x));
+	HashCombine(hashValue, std::hash<int>{}(position.y));
+	HashCombine(hashValue, std::hash<int>{}(position.z));
+
+	// Initialize a random engine with the combined hash value
+	std::mt19937 generator(hashValue);
+
+	// Define the distribution within the specified bounds
+	std::uniform_int_distribution distribution(lowerBound, upperBound);
+
+	// Generate the random number
+	return distribution(generator);
 }
