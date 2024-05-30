@@ -18,8 +18,8 @@
 enum class TransparencyType
 {
 	water = 0,
-	transparentTexture = 1,
-	transparentSprite = 2,
+	transparentSprite = 1,
+	transparentTexture = 2,
 	
 	none = 3,
 };
