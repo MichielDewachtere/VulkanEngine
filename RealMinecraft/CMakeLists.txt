@@ -71,7 +71,7 @@ set(SOURCES
     "Materials/OutlineMaterial.cpp"
     "Materials/TranspriteMaterial.cpp" 
 
- "Components/OutlineBlock.cpp" "Components/Gui.cpp" "Materials/GuiMaterial.cpp" "Materials/GuiMaterial.h" "Util/GuiParser.cpp")
+ "Components/OutlineBlock.cpp" "Components/Gui.cpp" "Materials/GuiMaterial.cpp" "Materials/GuiMaterial.h" "Util/GuiParser.cpp"  "Util/ChunkParser.cpp" "Util/ChunkParser.h")
 
 add_executable(${PROJECT_NAME} ${SOURCES} ${GLSL_SOURCE_FILES})
 
