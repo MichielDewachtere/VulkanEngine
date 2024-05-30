@@ -33,18 +33,25 @@ void OutlineBlock::Update()
         targetPos.z = static_cast<int>(ceil(fTargetPos.z));
 
         glm::ivec2 chunkPos;
-        chunkPos.x = targetPos.x < 0 ? (targetPos.x - CHUNK_SIZE) / CHUNK_SIZE * CHUNK_SIZE : targetPos.x / CHUNK_SIZE * CHUNK_SIZE;
-        chunkPos.y = targetPos.y < 0 ? (targetPos.z - CHUNK_SIZE) / CHUNK_SIZE * CHUNK_SIZE : targetPos.z / CHUNK_SIZE * CHUNK_SIZE;
+        chunkPos.x = targetPos.x < 0 ? ((targetPos.x + 1) - CHUNK_SIZE) / CHUNK_SIZE * CHUNK_SIZE : targetPos.x / CHUNK_SIZE * CHUNK_SIZE;
+        chunkPos.y = targetPos.z < 0 ? ((targetPos.z + 1) - CHUNK_SIZE) / CHUNK_SIZE * CHUNK_SIZE : targetPos.z / CHUNK_SIZE * CHUNK_SIZE;
 
         glm::ivec3 blockPos;
-        blockPos.x = std::abs(targetPos.x) % CHUNK_SIZE;
-        blockPos.y = targetPos.y;
-        blockPos.z = std::abs(targetPos.z )% CHUNK_SIZE;
 
-        if (targetPos.x < 0) blockPos.x = CHUNK_SIZE - blockPos.x;
-        if (targetPos.z < 0) blockPos.z = CHUNK_SIZE - blockPos.z;
+        blockPos.x = targetPos.x % CHUNK_SIZE;
+        blockPos.y = targetPos.y;
+        blockPos.z = targetPos.z % CHUNK_SIZE;
+
+        if (targetPos.x == -16 || targetPos.z == -16)
+            std::cout << "test\n";
+
+        if (targetPos.x < 0 && blockPos.x != 0) blockPos.x = CHUNK_SIZE + blockPos.x;
+        if (targetPos.z < 0 && blockPos.z != 0) blockPos.z = CHUNK_SIZE + blockPos.z;
 
         const auto pChunk = m_pWorldComponent->GetChunkAt(chunkPos);
+        if (pChunk == nullptr)
+            continue;
+
         if (pChunk->IsBlockAir(blockPos) || pChunk->IsBlockWater(blockPos))
         {
             m_CanPlaceAt = { chunkPos, blockPos };
